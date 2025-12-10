@@ -1,0 +1,111 @@
+:root{
+    --bs-menu-bg: #2f3349;
+    --bs-menu-bg-rgb: var(--bs-paper-bg-rgb);
+    --bs-menu-active-bg: var(--bs-primary);
+    --bs-menu-horizontal-active-bg: #3a3b64;
+    --bs-menu-color: #cfcde4;
+    --bs-menu-color-rgb: 207, 205, 228;
+    --bs-menu-hover-bg: color-mix(in sRGB, var(--bs-base-color) 6%, var(--bs-menu-bg));
+    --bs-menu-hover-color: #cfcde4;
+    --bs-menu-sub-active-bg: color-mix(in sRGB, var(--bs-base-color) 8%, var(--bs-menu-bg));
+    --bs-menu-sub-active-color: #cfcde4;
+    --bs-menu-box-shadow: 0 0.125rem 0.5rem 0 rgba(19, 17, 32, 0.18);
+    --bs-menu-divider-color: transparent;
+
+    --bs-primary: #2092EC;
+    --bs-primary-rgb: 32, 146, 236;
+    --bs-primary-bg-subtle: color-mix(in sRGB, var(--bs-paper-bg) 84%, #2092EC);
+    --bs-primary-border-subtle: rgba(32, 146, 236, 0.39);
+    --bs-primary-contrast: #fff
+}
+
+.bg-sidebar{
+    background-color: var(--bs-menu-bg);
+}
+.active-menu-item:not(.active-menu-item.sub){
+    background: linear-gradient(270deg, rgba(var(--bs-primary-rgb), 0.7) 0%, var(--bs-primary) 100%);
+    box-shadow: 0 .125rem .375rem 0 rgba(var(--bs-primary-rgb), 0.3);
+    color: var(--bs-menu-active-color);
+}
+.active-menu-item.sub{
+    background: #ffffff14;
+    color: var(--bs-menu-active-color);
+}
+.sidebar-menu-item:hover{
+    background-color: #ffffff14;
+}
+.sidebar-menu-item svg path{
+    stroke: #cfcde4;
+}
+.sidebar-menu-item span{
+    color: #cfcde4;
+}
+.text-menu-title{
+    color: #76778e;
+}
+.sidebar-menu .circle{
+    background-color: var(--bs-menu-color);
+    inset-inline-start: 1.1rem;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0'/%3E%3C/svg%3E");
+    mask-repeat: no-repeat;
+    mask-size: 100% 100%;
+    border-radius: 50%;
+    block-size: .75rem;
+    font-size: .75rem;
+    inline-size: .75rem;
+    right: 2.5%;
+}
+.sidebar-menu span.arrow{
+    display: block;
+    background-color: var(--bs-menu-color);
+    inset-block-start: 50%;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m9 6l6 6l-6 6'/%3E%3C/svg%3E");
+    mask-repeat: no-repeat;
+    mask-size: 100% 100%;
+    block-size: 1.375rem;
+    font-size: 1.375rem;
+    inline-size: 1.375rem;
+    margin-right: auto;
+}
+
+/* Sidebar Transition */
+    aside {
+        transition: width 0.3s ease-in-out;
+        overflow: hidden; /* KEY CHANGE 1: Hides messy content during animation */
+    }
+
+    /* Collapsed Width */
+    aside.collapsed {
+        width: 5rem; 
+    }
+
+    /* TEXT STYLING */
+    .sidebar-text, 
+    .text-menu-title,
+    .sidebar-arrow {
+        white-space: nowrap;      /* KEY CHANGE 2: Prevents text from breaking lines */
+        opacity: 1;               /* Fully visible */
+        transition: opacity 0.2s ease-in-out; /* Smooth fade effect */
+        transition-delay: 0.1s;   /* KEY CHANGE 3: Wait 0.1s before showing text on hover */
+    }
+
+    /* COLLAPSED STATE STYLING */
+    aside.collapsed .sidebar-text,
+    aside.collapsed .text-menu-title,
+    aside.collapsed .sidebar-arrow {
+        opacity: 0;               /* Hide text */
+        width: 0;                 /* Remove space taken */
+        display: none;            /* Ensure it doesn't effect layout */
+    }
+
+    /* CENTER ICONS WHEN COLLAPSED */
+    aside.collapsed .sidebar-menu-item {
+        justify-content: center; 
+        padding-left: 0;
+        padding-right: 0;
+    }
+    
+    /* HIDE SUBMENU WHEN COLLAPSED */
+    aside.collapsed .sidebar-submenu {
+        display: none !important;
+    }
