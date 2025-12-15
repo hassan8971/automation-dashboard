@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\Admin\ProductImageController;
 use App\Http\Controllers\Admin\VideoController;
+use App\Http\Controllers\Admin\AdminChatController;
 use App\Http\Controllers\Auth\LoginController as UserLoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\OtpLoginController;
@@ -87,6 +88,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::resource('blog-categories', BlogCategoryController::class)->except(['show']);
         Route::resource('posts', PostController::class);
+
+        Route::get('/chat/messages', [AdminChatController::class, 'fetchMessages'])->name('chat.fetch');
+        Route::post('/chat/send', [AdminChatController::class, 'sendMessage'])->name('chat.send');
     });
 });
 

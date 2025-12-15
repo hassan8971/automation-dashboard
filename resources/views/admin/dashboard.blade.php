@@ -5,6 +5,86 @@
 @section('content')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<div class="widgets">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6" dir="rtl">
+
+        <div id="weather-card" class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 shadow-lg text-white">
+            
+            <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white opacity-10 blur-2xl"></div>
+            <div class="absolute bottom-0 left-0 -ml-8 -mb-8 w-32 h-32 rounded-full bg-blue-300 opacity-20 blur-2xl"></div>
+
+            <div class="relative p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-2xl font-bold">تبریز، ایران</h3>
+                        <p id="weather-date" class="text-blue-100 text-sm mt-1">...</p>
+                    </div>
+                    <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm shadow-inner">
+                        <span id="weather-icon" class="text-4xl">⏳</span>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex items-center">
+                    <div class="flex-1">
+                        <span id="weather-temp" class="text-5xl font-extrabold tracking-tighter">--</span>
+                        <span class="text-2xl align-top opacity-80">°C</span>
+                    </div>
+                    <div class="text-right space-y-1">
+                        <p id="weather-desc" class="text-lg font-medium">در حال دریافت...</p>
+                        
+                        <div id="wind-container" class="flex items-center gap-2 text-blue-100 text-sm hidden">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span id="weather-wind"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="relative overflow-hidden rounded-2xl bg-white dark:bg-dark-paper shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col h-[400px]" dir="rtl">
+    
+            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 flex justify-between items-center text-white shadow-md z-10">
+                <div class="flex items-center gap-2">
+                    <div class="bg-white/20 p-1.5 rounded-full animate-pulse">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg">چت‌روم ادمین‌ها</h3>
+                        <p class="text-xs text-purple-200">پیام‌ها هر ۲۴ ساعت پاک می‌شوند</p>
+                    </div>
+                </div>
+                <span class="flex h-3 w-3 relative">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+            </div>
+
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-[#25293c]">
+                <div class="text-center text-gray-400 text-sm mt-10">در حال بارگذاری پیام‌ها...</div>
+            </div>
+
+            <div class="p-3 bg-white dark:bg-dark-paper border-t border-gray-200 dark:border-gray-700">
+                <form id="chat-form" class="flex gap-2" onsubmit="sendMessage(event)">
+                    <input type="text" id="message-input" 
+                        class="flex-1 px-4 py-2 bg-gray-100 dark:bg-dark-bg border-0 rounded-full focus:ring-2 focus:ring-purple-500 dark:text-white placeholder-gray-400"
+                        placeholder="پیامی بنویسید..." autocomplete="off">
+                    <button type="submit" 
+                            class="bg-purple-600 hover:bg-purple-700 text-white p-2.5 rounded-full transition-colors shadow-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 -rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
 <div dir="rtl">
     <h1 class="text-3xl font-bold text-gray-800 mb-6 dark:text-white">داشبورد</h1>
 
@@ -238,6 +318,185 @@
                 }
             }
         });
+    });
+</script>
+
+<script>
+    // این کد به محض لود شدن صفحه اجرا می‌شود
+    document.addEventListener("DOMContentLoaded", function() {
+        
+        // 1. تنظیم تاریخ شمسی
+        const dateElement = document.getElementById('weather-date');
+        const today = new Date().toLocaleDateString('fa-IR', { weekday: 'long', day: 'numeric', month: 'long' });
+        dateElement.innerText = today;
+
+        // 2. دریافت آب و هوا
+        getWeatherData();
+    });
+
+    function getWeatherData() {
+        const apiUrl = 'https://api.open-meteo.com/v1/forecast?latitude=38.08&longitude=46.29&current_weather=true';
+
+        console.log('در حال دریافت آب و هوا...');
+
+        fetch(apiUrl)
+            .then(response => {
+                if (!response.ok) throw new Error("مشکل در شبکه");
+                return response.json();
+            })
+            .then(data => {
+                console.log('داده دریافت شد:', data);
+                updateUI(data.current_weather);
+            })
+            .catch(error => {
+                console.error('خطا:', error);
+                document.getElementById('weather-desc').innerText = 'خطا در اتصال';
+                document.getElementById('weather-icon').innerText = '⚠️';
+            });
+    }
+
+    function updateUI(weather) {
+        // آپدیت دما
+        document.getElementById('weather-temp').innerText = Math.round(weather.temperature);
+        
+        // آپدیت باد
+        document.getElementById('weather-wind').innerText = 'باد: ' + weather.windspeed + ' km/h';
+        document.getElementById('wind-container').classList.remove('hidden');
+
+        // تشخیص وضعیت و آیکون
+        const code = weather.weathercode;
+        const hour = new Date().getHours();
+        const isDay = hour > 6 && hour < 19;
+        
+        let condition = 'معمولی';
+        let icon = '🌡️';
+
+        if (code === 0) {
+            condition = 'آسمان صاف';
+            icon = isDay ? '☀️' : '🌙';
+        } else if (code >= 1 && code <= 3) {
+            condition = 'کمی ابری';
+            icon = isDay ? '⛅' : '☁️';
+        } else if (code >= 45 && code <= 48) {
+            condition = 'مه‌آلود';
+            icon = '🌫️';
+        } else if (code >= 51 && code <= 67) {
+            condition = 'بارانی';
+            icon = '🌧️';
+        } else if (code >= 71 && code <= 77) {
+            condition = 'برفی';
+            icon = '❄️';
+        } else if (code >= 95) {
+            condition = 'طوفانی';
+            icon = '⛈️';
+        }
+
+        document.getElementById('weather-desc').innerText = condition;
+        document.getElementById('weather-icon').innerText = icon;
+    }
+</script>
+
+
+<script>
+    // تنظیمات
+    const FETCH_URL = "{{ route('admin.chat.fetch') }}";
+    const SEND_URL = "{{ route('admin.chat.send') }}";
+    const CSRF_TOKEN = "{{ csrf_token() }}";
+    
+    let chatContainer = document.getElementById('chat-messages');
+    let messageInput = document.getElementById('message-input');
+    let lastMessageCount = 0;
+    let isUserScrolling = false;
+
+    // تشخیص اسکرول کاربر (برای اینکه وقتی کاربر داره بالا رو میخونه، نپره پایین)
+    chatContainer.addEventListener('scroll', () => {
+        if (chatContainer.scrollTop + chatContainer.clientHeight < chatContainer.scrollHeight - 50) {
+            isUserScrolling = true;
+        } else {
+            isUserScrolling = false;
+        }
+    });
+
+    // دریافت پیام‌ها
+    function fetchMessages() {
+        fetch(FETCH_URL)
+            .then(res => res.json())
+            .then(data => {
+                const messages = data.messages;
+                const currentUserId = data.current_user_id;
+
+                // اگر پیام جدیدی نیامده، رندر نکنیم (بهینه‌سازی)
+                // مگر اینکه بار اول باشد
+                if (messages.length === lastMessageCount && lastMessageCount !== 0) return;
+                
+                chatContainer.innerHTML = ''; // پاک کردن موقت (در پروژه واقعی بهتر است Append شود)
+                lastMessageCount = messages.length;
+
+                if (messages.length === 0) {
+                    chatContainer.innerHTML = '<div class="text-center text-gray-400 text-xs mt-4">هنوز پیامی نیست. شروع کنید!</div>';
+                    return;
+                }
+
+                messages.forEach(msg => {
+                    const isMe = msg.admin_id === currentUserId;
+                    const time = new Date(msg.created_at).toLocaleTimeString('fa-IR', {hour: '2-digit', minute:'2-digit'});
+                    
+                    const html = `
+                        <div class="flex flex-col ${isMe ? 'items-start' : 'items-end'}">
+                            <div class="flex items-end gap-2 max-w-[85%] ${isMe ? 'flex-row' : 'flex-row-reverse'}">
+                                
+                                <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${isMe ? 'bg-purple-500' : 'bg-gray-400'}">
+                                    ${msg.admin.name.charAt(0)}
+                                </div>
+
+                                <div class="px-3 py-2 rounded-2xl text-sm shadow-sm relative group 
+                                    ${isMe ? 'bg-purple-100 text-purple-900 rounded-tr-none' : 'bg-white dark:bg-gray-700 dark:text-gray-100 rounded-tl-none border border-gray-100 dark:border-gray-600'}">
+                                    ${msg.message}
+                                    <span class="text-[10px] opacity-50 block text-left mt-1 dir-ltr leading-none">${time}</span>
+                                </div>
+                            </div>
+                            <span class="text-[10px] text-gray-400 px-9 mt-0.5">${isMe ? 'شما' : msg.admin.name}</span>
+                        </div>
+                    `;
+                    chatContainer.insertAdjacentHTML('beforeend', html);
+                });
+
+                // اسکرول به پایین فقط اگر کاربر در حال خواندن پیام‌های قدیمی نیست
+                if (!isUserScrolling) {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+            })
+            .catch(err => console.error('Chat Error:', err));
+    }
+
+    // ارسال پیام
+    function sendMessage(e) {
+        e.preventDefault();
+        const text = messageInput.value.trim();
+        if (!text) return;
+
+        // پاک کردن ورودی سریع برای حس بهتر
+        messageInput.value = '';
+
+        fetch(SEND_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN
+            },
+            body: JSON.stringify({ message: text })
+        })
+        .then(res => res.json())
+        .then(() => {
+            fetchMessages(); // رفرش فوری
+            isUserScrolling = false; // فورس اسکرول به پایین
+        });
+    }
+
+    // اجرا
+    document.addEventListener("DOMContentLoaded", function() {
+        fetchMessages(); // بار اول
+        setInterval(fetchMessages, 3000); // هر ۳ ثانیه چک کن
     });
 </script>
 @endsection

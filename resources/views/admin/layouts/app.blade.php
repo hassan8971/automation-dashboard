@@ -164,6 +164,40 @@
 
         <main class="flex-grow p-8">
             <nav class="flex w-full justify-end mb-6 z-50 relative">
+
+                @php
+                    $hour = now()->hour;
+                    $greeting = '';
+                    $icon = '';
+
+                    if ($hour >= 5 && $hour < 12) {
+                        $greeting = 'صبح بخیر';
+                        $icon = '☀️'; // خورشید صبح
+                    } elseif ($hour >= 12 && $hour < 17) {
+                        $greeting = 'ظهر بخیر';
+                        $icon = '🌤️'; // خورشید وسط روز
+                    } elseif ($hour >= 17 && $hour < 20) {
+                        $greeting = 'عصر بخیر';
+                        $icon = '🌇'; // غروب
+                    } else {
+                        $greeting = 'شب بخیر';
+                        $icon = '🌙'; // ماه
+                    }
+                @endphp
+
+                <div class="hidden md:flex items-center gap-2 ml-4 px-4 py-1.5 rounded-full bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 transition-colors duration-300">
+                    
+                    <span class="text-lg animate-pulse">{{ $icon }}</span>
+                    
+                    <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
+                        <span class="font-bold text-blue-600 dark:text-blue-400">
+                            {{ auth()->user()->name }}
+                        </span> 
+                        عزیز، {{ $greeting }}
+                    </p>
+                </div>
+
+
                 <div class="relative">
                     <button id="theme-toggle-btn" class="p-2 rounded-full bg-white dark:bg-dark-paper shadow-sm hover:bg-gray-100 dark:hover:bg-dark-hover text-gray-500 dark:text-gray-200 transition-colors focus:outline-none border border-gray-200 dark:border-dark-border">
                         <svg id="theme-icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
