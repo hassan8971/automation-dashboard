@@ -6,43 +6,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <div class="widgets">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6" dir="rtl">
 
-        <div id="weather-card" class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 shadow-lg text-white">
-            
-            <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white opacity-10 blur-2xl"></div>
-            <div class="absolute bottom-0 left-0 -ml-8 -mb-8 w-32 h-32 rounded-full bg-blue-300 opacity-20 blur-2xl"></div>
-
-            <div class="relative p-6">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h3 class="text-2xl font-bold">تبریز، ایران</h3>
-                        <p id="weather-date" class="text-blue-100 text-sm mt-1">...</p>
-                    </div>
-                    <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm shadow-inner">
-                        <span id="weather-icon" class="text-4xl">⏳</span>
-                    </div>
-                </div>
-
-                <div class="mt-6 flex items-center">
-                    <div class="flex-1">
-                        <span id="weather-temp" class="text-5xl font-extrabold tracking-tighter">--</span>
-                        <span class="text-2xl align-top opacity-80">°C</span>
-                    </div>
-                    <div class="text-right space-y-1">
-                        <p id="weather-desc" class="text-lg font-medium">در حال دریافت...</p>
-                        
-                        <div id="wind-container" class="flex items-center gap-2 text-blue-100 text-sm hidden">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span id="weather-wind"></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+    <div class="grid grid-cols-1 gap-6 mb-6">
+        <!-- CHATBOX -->
         <div class="relative overflow-hidden rounded-2xl bg-white dark:bg-dark-paper shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col h-[400px]" dir="rtl">
     
             <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 flex justify-between items-center text-white shadow-md z-10">
@@ -82,6 +48,7 @@
             </div>
         </div>
 
+        <!-- CHATBOX -->
     </div>
 </div>
 
@@ -321,80 +288,6 @@
     });
 </script>
 
-<script>
-    // این کد به محض لود شدن صفحه اجرا می‌شود
-    document.addEventListener("DOMContentLoaded", function() {
-        
-        // 1. تنظیم تاریخ شمسی
-        const dateElement = document.getElementById('weather-date');
-        const today = new Date().toLocaleDateString('fa-IR', { weekday: 'long', day: 'numeric', month: 'long' });
-        dateElement.innerText = today;
-
-        // 2. دریافت آب و هوا
-        getWeatherData();
-    });
-
-    function getWeatherData() {
-        const apiUrl = 'https://api.open-meteo.com/v1/forecast?latitude=38.08&longitude=46.29&current_weather=true';
-
-        console.log('در حال دریافت آب و هوا...');
-
-        fetch(apiUrl)
-            .then(response => {
-                if (!response.ok) throw new Error("مشکل در شبکه");
-                return response.json();
-            })
-            .then(data => {
-                console.log('داده دریافت شد:', data);
-                updateUI(data.current_weather);
-            })
-            .catch(error => {
-                console.error('خطا:', error);
-                document.getElementById('weather-desc').innerText = 'خطا در اتصال';
-                document.getElementById('weather-icon').innerText = '⚠️';
-            });
-    }
-
-    function updateUI(weather) {
-        // آپدیت دما
-        document.getElementById('weather-temp').innerText = Math.round(weather.temperature);
-        
-        // آپدیت باد
-        document.getElementById('weather-wind').innerText = 'باد: ' + weather.windspeed + ' km/h';
-        document.getElementById('wind-container').classList.remove('hidden');
-
-        // تشخیص وضعیت و آیکون
-        const code = weather.weathercode;
-        const hour = new Date().getHours();
-        const isDay = hour > 6 && hour < 19;
-        
-        let condition = 'معمولی';
-        let icon = '🌡️';
-
-        if (code === 0) {
-            condition = 'آسمان صاف';
-            icon = isDay ? '☀️' : '🌙';
-        } else if (code >= 1 && code <= 3) {
-            condition = 'کمی ابری';
-            icon = isDay ? '⛅' : '☁️';
-        } else if (code >= 45 && code <= 48) {
-            condition = 'مه‌آلود';
-            icon = '🌫️';
-        } else if (code >= 51 && code <= 67) {
-            condition = 'بارانی';
-            icon = '🌧️';
-        } else if (code >= 71 && code <= 77) {
-            condition = 'برفی';
-            icon = '❄️';
-        } else if (code >= 95) {
-            condition = 'طوفانی';
-            icon = '⛈️';
-        }
-
-        document.getElementById('weather-desc').innerText = condition;
-        document.getElementById('weather-icon').innerText = icon;
-    }
-</script>
 
 
 <script>
@@ -499,4 +392,6 @@
         setInterval(fetchMessages, 3000); // هر ۳ ثانیه چک کن
     });
 </script>
+
+
 @endsection

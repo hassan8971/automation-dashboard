@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\Admin\ProductImageController;
 use App\Http\Controllers\Admin\VideoController;
 use App\Http\Controllers\Admin\AdminChatController;
+use App\Http\Controllers\Admin\TodoController;
 use App\Http\Controllers\Auth\LoginController as UserLoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\OtpLoginController;
@@ -91,6 +92,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/chat/messages', [AdminChatController::class, 'fetchMessages'])->name('chat.fetch');
         Route::post('/chat/send', [AdminChatController::class, 'sendMessage'])->name('chat.send');
+
+        Route::get('/todos', [TodoController::class, 'index'])->name('todos.index');
+        Route::post('/todos', [TodoController::class, 'store'])->name('todos.store');
+        Route::patch('/todos/{todo}', [TodoController::class, 'toggle'])->name('todos.toggle');
+        Route::delete('/todos/{todo}', [TodoController::class, 'destroy'])->name('todos.destroy');
+        Route::get('/todos/check-urgent', [TodoController::class, 'checkUrgent'])->name('todos.checkUrgent');
     });
 });
 
