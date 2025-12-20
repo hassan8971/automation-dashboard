@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use App\Models\Address;
+use App\Http\Resources\Api\v1\UserResource;
 
 class UserPanelController extends Controller
 {
@@ -16,8 +17,8 @@ class UserPanelController extends Controller
      */
     public function getUser(Request $request)
     {
-        // $request->user() به طور خودکار کاربر مرتبط با توکن را برمی‌گرداند
-        return $request->user();
+        // The resource automatically calculates 'next_action'
+        return new UserResource($request->user());
     }
 
     /**
@@ -68,20 +69,39 @@ class UserPanelController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'first_name' => 'nullable|string|max:255',
+            'last_name' => 'nullable|string|max:255',
+            'name' => 'nullable|string|max:255',
             'email' => [
+                'nullable',
                 'string',
                 'email',
                 'max:255',
                 Rule::unique('users')->ignore($user->id),
             ],
         ]);
-        $user->update($validated);
+
+        // Logic 1: Update Name
+        if ($request->has('first_name') || $request->has('last_name')) {
+            $first = $request->input('first_name', '');
+            $last = $request->input('last_name', '');
+            $user->name = trim("$first $last");
+        } elseif ($request->has('name')) {
+            $user->name = $request->input('name');
+        }
+
+        // Logic 2: Update Email
+        if ($request->has('email')) {
+            $user->email = $request->input('email');
+        }
+
+        $user->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'پروفایل با موفقیت به‌روزرسانی شد.',
-            'user' => $user->fresh(), // اطلاعات جدید کاربر را برمی‌گردانیم
+            'message' => 'اطلاعات با موفقیت ذخیره شد.',
+            // Return the resource so frontend gets the updated 'next_action' immediately
+            'user' => new UserResource($user->fresh()), 
         ]);
     }
 

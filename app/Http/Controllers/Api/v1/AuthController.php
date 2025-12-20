@@ -13,9 +13,7 @@ use Illuminate\Support\Facades\Cache;
 
 class AuthController extends Controller
 {
-    /**
-     * Get mobile number, "send" (simulate) OTP.
-     */
+    // ... (keep sendOtp as is) ...
     public function sendOtp(Request $request)
     {
         $mobile = $this->normalizeMobile($request->input('mobile'));
@@ -34,50 +32,49 @@ class AuthController extends Controller
             ], 422);
         }
         
+        // For development/demo purposes
         $otp = '1234';
 
-        // Save in cache for 5 minutes
         Cache::put('otp_' . $mobile, $otp, now()->addMinutes(5));
 
         return response()->json([
             'success' => true,
-            'message' => 'کد تایید (1234) با موفقیت "ارسال" شد.',
+            'message' => 'کد تایید ارسال شد.',
+            // In production, remove 'code' from response
+            'development_code' => $otp, 
             'mobile' => $mobile
         ]);
     }
 
     /**
-     * Verify OTP, find/create user, and return Sanctum Token.
+     * Verify OTP, find/create user, and return Token with Next Action.
      */
     public function verifyOtp(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'mobile' => 'required|string',
             'code' => 'required|numeric|digits:4',
         ]);
 
-        $mobile = $this->normalizeMobile($validated['mobile']);
-
+        $mobile = $this->normalizeMobile($request->input('mobile'));
         $cacheKey = 'otp_' . $mobile;
         $cachedOtp = Cache::get($cacheKey);
 
         if (!$cachedOtp) {
-            return response()->json(['success' => false, 'message' => 'کد منقضی شده است. لطفا دوباره تلاش کنید.'], 419);
+            return response()->json(['success' => false, 'message' => 'کد منقضی شده است.'], 419);
         }
 
-        
-        if ($validated['code'] != $cachedOtp) {
+        if ($request->input('code') != $cachedOtp) {
             return response()->json(['success' => false, 'message' => 'کد وارد شده صحیح نمی‌باشد.'], 401);
         }
 
-        
         Cache::forget($cacheKey);
 
-        
         $user = null;
         $guard = 'web';
         $abilities = ['role:user'];
 
+        // Check if admin
         $admin = Admin::where('mobile', $mobile)->first();
 
         if ($admin) {
@@ -85,30 +82,39 @@ class AuthController extends Controller
             $guard = 'admin';
             $abilities = ['role:admin'];
         } else {
+            // Find or Create User
+            // We DO NOT set a default name here anymore.
+            // This allows us to detect if the profile is incomplete.
             $user = User::firstOrCreate(
-                ['mobile' => $mobile],
-                ['name' => 'کاربر ' . Str::random(4)]
+                ['mobile' => $mobile]
             );
             $guard = 'web';
         }
 
-        // Generate sanctum token
         $user->tokens()->delete();
         $token = $user->createToken('api-token', $abilities)->plainTextToken;
 
-        // Send token to front-end
+        // Determine Next Action for the Frontend
+        $nextAction = 'dashboard';
+        if ($guard === 'web') {
+            if (empty($user->name)) {
+                $nextAction = 'register_name'; // Step 2: Show Name Form
+            } elseif (empty($user->email)) {
+                $nextAction = 'register_email'; // Step 3: Show Email Form
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'ورود با موفقیت انجام شد.',
             'token' => $token,
             'user' => $user,
             'guard' => $guard,
+            'next_action' => $nextAction, // frontend checks this string
         ]);
     }
 
-    /**
-     * Helper function to normalize mobile numbers.
-     */
+    // ... (keep normalizeMobile and logout as is) ...
     private function normalizeMobile(string $mobile): string
     {
         $mobile = preg_replace('/[^\d]/', '', $mobile);
@@ -121,17 +127,9 @@ class AuthController extends Controller
         return $mobile;
     }
 
-    /**
-     * Log the user out (Invalidate the token).
-     */
     public function logout(Request $request)
     {
-        // This method *requires* the user to be authenticated via Sanctum
         $request->user()->currentAccessToken()->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'خروج با موفقیت انجام شد.'
-        ]);
+        return response()->json(['success' => true, 'message' => 'خروج با موفقیت انجام شد.']);
     }
 }

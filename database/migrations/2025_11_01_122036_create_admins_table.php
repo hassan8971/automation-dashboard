@@ -17,7 +17,12 @@ return new class extends Migration
             $table->string('username')->unique();
             $table->string('email')->unique();
             $table->string('mobile')->unique();
-            $table->string('password');
+            $table->string('last_name')->nullable();
+            $table->string('nickname')->nullable();
+            $table->boolean('use_nickname')->default(false);
+            $table->string('profile_photo_path')->nullable();
+            $table->string('dashboard_banner_path')->nullable();
+            $table->boolean('is_online')->default(false);
             $table->timestamps();
         });
     }

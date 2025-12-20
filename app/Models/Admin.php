@@ -23,7 +23,15 @@ class Admin extends Authenticatable
 
 
     protected $fillable = [
-      'name', 'username', 'email', 'password', 'mobile',
+      'name', 'username', 'email', 'password', 'mobile', 'last_name',
+    'nickname',
+    'use_nickname',
+    'profile_photo_path',
+    'dashboard_banner_path',
+    ];
+
+    protected $casts = [
+        'use_nickname' => 'boolean', // مهم برای چک‌باکس
     ];
 
       /**

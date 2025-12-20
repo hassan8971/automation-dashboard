@@ -18,6 +18,19 @@
     --bs-primary-border-subtle: rgba(32, 146, 236, 0.39);
     --bs-primary-contrast: #fff
 }
+.bg-blue-main{
+    background-color: #2992eb;
+}
+.bg-blue-main-dark{
+    background-color: #2577be;
+}
+.text-blue-main{
+    color: #2992eb;
+}
+.border-blue-main{
+    border-color: #2992eb;
+}
+
 
 .bg-sidebar{
     background-color: var(--bs-menu-bg);

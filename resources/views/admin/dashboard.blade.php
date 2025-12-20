@@ -2,6 +2,51 @@
 
 @section('title', 'داشبورد ادمین')
 
+@section('header_banner')
+@php
+        $admin = auth()->guard('admin')->user();
+        
+        // اگر ادمین بنر آپلود کرده بود، آن را نشان بده، وگرنه بنر پیش‌فرض
+        $bannerUrl = $admin->dashboard_banner_path 
+            ? asset('storage/' . $admin->dashboard_banner_path) 
+            : 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1500&h=400&auto=format&fit=crop';
+            
+        // نام برند یا نام ادمین روی بنر
+        $brandName = 'آکـامُـد'; // یا می‌توانید از دیتابیس بگیرید
+@endphp
+<div class="relative w-full h-48 md:h-64 lg:h-80 overflow-hidden group mb-4">
+    
+    <img src="{{ $bannerUrl }}" 
+         alt="Brand Banner" 
+         class="absolute inset-0 w-full h-full object-contain transition-transform duration-700">
+
+    <!-- <div class="absolute inset-0 bg-gradient-to-r from-gray-900/90 via-gray-900/50 to-transparent"></div>
+
+    <div class="relative z-10 h-full flex flex-col justify-center px-6 md:px-12 lg:px-20 max-w-7xl mx-auto">
+        
+        <span class="inline-flex items-center gap-2 self-start bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 text-emerald-300 text-xs font-bold px-3 py-1 rounded-full mb-4">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            پنل مدیریت
+        </span>
+
+        <h1 class="text-3xl md:text-5xl font-black text-white drop-shadow-lg mb-2 tracking-tight">
+            {{ $brandName }}
+        </h1>
+
+        <p class="text-gray-200 text-sm md:text-lg font-light max-w-lg leading-relaxed">
+            به پنل مدیریت خوش آمدید. امروز روز خوبی برای رشد کسب و کار است.
+        </p>
+
+    </div>
+    
+    <div class="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-gray-100 dark:from-dark-bg to-transparent"></div> -->
+
+</div>
+@endsection
+
 @section('content')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -9,42 +54,50 @@
 
     <div class="grid grid-cols-1 gap-6 mb-6">
         <!-- CHATBOX -->
-        <div class="relative overflow-hidden rounded-2xl bg-white dark:bg-dark-paper shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col h-[400px]" dir="rtl">
-    
-            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 flex justify-between items-center text-white shadow-md z-10">
+        <div id="chat-widget" class="relative overflow-hidden rounded-2xl bg-white dark:bg-dark-paper shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col h-[500px] transition-all duration-500 ease-in-out" dir="rtl">
+            
+            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-3 flex justify-between items-center text-white shadow-md z-20 shrink-0 h-[60px]">
                 <div class="flex items-center gap-2">
-                    <div class="bg-white/20 p-1.5 rounded-full animate-pulse">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
+                    <div class="bg-white/20 p-1.5 rounded-full"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg></div>
+                    <h3 class="font-bold text-base">چت عمومی</h3>
+                </div>
+                <button onclick="toggleChatWidget()" class="hover:bg-white/20 p-1 rounded-full transition-colors"><svg id="chat-collapse-icon" class="w-6 h-6 transform transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg></button>
+            </div>
+
+            <div class="flex-1 flex overflow-hidden">
+                
+                <div class="w-1/3 border-l border-gray-200 dark:border-gray-700 flex flex-col bg-gray-50/50 dark:bg-dark-bg/50">
+                    
+                    <div class="p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-dark-paper">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300">وضعیت من:</span>
+                            <button onclick="toggleMyStatus()" id="my-status-btn" class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-300 focus:outline-none bg-gray-300">
+                                <span id="my-status-dot" class="inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-300 translate-x-0.5"></span>
+                            </button>
+                        </div>
+                        <p id="my-status-text" class="text-[10px] text-gray-500 mt-1 text-left">آفلاین</p>
                     </div>
-                    <div>
-                        <h3 class="font-bold text-lg">چت‌روم ادمین‌ها</h3>
-                        <p class="text-xs text-purple-200">پیام‌ها هر ۲۴ ساعت پاک می‌شوند</p>
+
+                    <div class="flex-1 overflow-y-auto p-2 space-y-2">
+                        <p class="text-xs font-semibold text-gray-400 mb-2 px-1">لیست همکاران</p>
+                        <div id="admins-list" class="space-y-1">
+                            </div>
                     </div>
                 </div>
-                <span class="flex h-3 w-3 relative">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                </span>
-            </div>
 
-            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-[#25293c]">
-                <div class="text-center text-gray-400 text-sm mt-10">در حال بارگذاری پیام‌ها...</div>
-            </div>
+                <div class="w-2/3 flex flex-col bg-gray-50 dark:bg-[#25293c]">
+                    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3">
+                        <div class="text-center text-gray-400 text-sm mt-10">در حال بارگذاری...</div>
+                    </div>
 
-            <div class="p-3 bg-white dark:bg-dark-paper border-t border-gray-200 dark:border-gray-700">
-                <form id="chat-form" class="flex gap-2" onsubmit="sendMessage(event)">
-                    <input type="text" id="message-input" 
-                        class="flex-1 px-4 py-2 bg-gray-100 dark:bg-dark-bg border-0 rounded-full focus:ring-2 focus:ring-purple-500 dark:text-white placeholder-gray-400"
-                        placeholder="پیامی بنویسید..." autocomplete="off">
-                    <button type="submit" 
-                            class="bg-purple-600 hover:bg-purple-700 text-white p-2.5 rounded-full transition-colors shadow-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 -rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                        </svg>
-                    </button>
-                </form>
+                    <div class="p-2 bg-white dark:bg-dark-paper border-t border-gray-200 dark:border-gray-700">
+                        <form id="chat-form" class="flex gap-2" onsubmit="sendMessage(event)">
+                            <input type="text" id="message-input" class="flex-1 px-3 py-2 bg-gray-100 dark:bg-dark-bg border-0 rounded-lg text-sm focus:ring-1 focus:ring-indigo-500 dark:text-white" placeholder="پیام..." autocomplete="off">
+                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-lg"><svg class="w-5 h-5 -rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg></button>
+                        </form>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -300,6 +353,7 @@
     let messageInput = document.getElementById('message-input');
     let lastMessageCount = 0;
     let isUserScrolling = false;
+    let isChatScrolling = false;
 
     // تشخیص اسکرول کاربر (برای اینکه وقتی کاربر داره بالا رو میخونه، نپره پایین)
     chatContainer.addEventListener('scroll', () => {
@@ -362,6 +416,113 @@
             .catch(err => console.error('Chat Error:', err));
     }
 
+    function fetchAdminsStatus() {
+        fetch("{{ route('admin.chat.users') }}")
+            .then(res => res.json())
+            .then(data => {
+                // آپدیت دکمه وضعیت من
+                updateMyStatusUI(data.my_status);
+
+                // آپدیت لیست همکاران
+                const list = document.getElementById('admins-list');
+                if(!list) return;
+                list.innerHTML = '';
+
+                if (data.admins.length === 0) {
+                    list.innerHTML = '<span class="text-[10px] text-gray-400 text-center block">همکار دیگری نیست</span>';
+                }
+
+                data.admins.forEach(admin => {
+                    const img = admin.profile_photo_path ? `/storage/${admin.profile_photo_path}` : `https://ui-avatars.com/api/?name=${admin.name}&background=random`;
+                    
+                    const html = `
+                        <div class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-hover transition-colors group">
+                            <div class="relative">
+                                <img src="${img}" class="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-600">
+                                <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-dark-bg ${admin.is_online ? 'bg-green-500' : 'bg-gray-400'}"></span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-medium text-gray-700 dark:text-gray-200 truncate">${admin.name}</p>
+                                <p class="text-[9px] ${admin.is_online ? 'text-green-500' : 'text-gray-400'}">${admin.is_online ? 'آنلاین' : 'آفلاین'}</p>
+                            </div>
+                        </div>
+                    `;
+                    list.insertAdjacentHTML('beforeend', html);
+                });
+            });
+    }
+
+    function toggleMyStatus() {
+        fetch("{{ route('admin.chat.status') }}", {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json','Accept': 'application/json','X-CSRF-TOKEN': "{{ csrf_token() }}"}
+        })
+        .then(res => res.json())
+        .then(data => {
+            updateMyStatusUI(data.status);
+        });
+    }
+
+    // UI Helper for My Status Button
+   // UI Helper for My Status Button
+    function updateMyStatusUI(isOnline) {
+        const btn = document.getElementById('my-status-btn');
+        const dot = document.getElementById('my-status-dot');
+        const text = document.getElementById('my-status-text');
+        
+        if (isOnline) {
+            // === ONLINE STATE (Green) ===
+            btn.classList.remove('bg-gray-300');
+            btn.classList.add('bg-green-500');
+            
+            // Move to the LEFT (Negative translation)
+            // -translate-x-5 ensures it hits the left side of the w-9 container
+            dot.classList.remove('translate-x-0.5'); 
+            dot.classList.add('-translate-x-5'); 
+            
+            text.innerText = 'شما آنلاین هستید';
+            text.classList.remove('text-gray-500');
+            text.classList.add('text-green-600', 'font-bold');
+        } else {
+            // === OFFLINE STATE (Gray) ===
+            btn.classList.add('bg-gray-300');
+            btn.classList.remove('bg-green-500');
+            
+            // Move to the RIGHT (Reset to start)
+            // translate-x-0.5 gives it a tiny breathing room from the right border
+            dot.classList.add('translate-x-0.5'); 
+            dot.classList.remove('-translate-x-5');
+            
+            text.innerText = 'شما آفلاین هستید';
+            text.classList.remove('text-green-600', 'font-bold');
+            text.classList.add('text-gray-500');
+        }
+    }
+
+    // --- CHAT WIDGET TOGGLE LOGIC ---
+    // --- CHAT WIDGET TOGGLE LOGIC ---
+    function toggleChatWidget() {
+        const widget = document.getElementById('chat-widget');
+        const icon = document.getElementById('chat-collapse-icon');
+        
+        // 1. Check for the correct height class (500px, not 400px)
+        const isExpanded = widget.classList.contains('h-[500px]');
+
+        if (isExpanded) {
+            // Collapse
+            widget.classList.remove('h-[500px]');
+            widget.classList.add('h-[60px]'); // Match header height exactly
+            
+            icon.classList.add('rotate-180');
+        } else {
+            // Expand
+            widget.classList.add('h-[500px]');
+            widget.classList.remove('h-[60px]');
+            
+            icon.classList.remove('rotate-180');
+        }
+    }
+    
     // ارسال پیام
     function sendMessage(e) {
         e.preventDefault();
@@ -388,8 +549,21 @@
 
     // اجرا
     document.addEventListener("DOMContentLoaded", function() {
-        fetchMessages(); // بار اول
-        setInterval(fetchMessages, 3000); // هر ۳ ثانیه چک کن
+        // Init Chat
+        fetchMessages();
+        fetchAdminsStatus();
+        
+        // Polling (هر ۵ ثانیه پیام‌ها و وضعیت‌ها چک می‌شوند)
+        setInterval(() => {
+            fetchMessages();
+            fetchAdminsStatus();
+        }, 5000);
+        const msgBox = document.getElementById('chat-messages');
+        if(msgBox) {
+            msgBox.addEventListener('scroll', () => {
+                isChatScrolling = Math.abs(msgBox.scrollHeight - msgBox.scrollTop - msgBox.clientHeight) > 10;
+            });
+        }
     });
 </script>
 

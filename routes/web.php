@@ -93,11 +93,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/chat/messages', [AdminChatController::class, 'fetchMessages'])->name('chat.fetch');
         Route::post('/chat/send', [AdminChatController::class, 'sendMessage'])->name('chat.send');
 
+        Route::get('/chat/users', [AdminChatController::class, 'fetchUsers'])->name('chat.users');
+        Route::post('/chat/status', [AdminChatController::class, 'toggleStatus'])->name('chat.status');
+
         Route::get('/todos', [TodoController::class, 'index'])->name('todos.index');
         Route::post('/todos', [TodoController::class, 'store'])->name('todos.store');
         Route::patch('/todos/{todo}', [TodoController::class, 'toggle'])->name('todos.toggle');
         Route::delete('/todos/{todo}', [TodoController::class, 'destroy'])->name('todos.destroy');
         Route::get('/todos/check-urgent', [TodoController::class, 'checkUrgent'])->name('todos.checkUrgent');
+
+        Route::get('/profile', [App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('profile.edit');
+        Route::put('/profile', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
     });
 });
 
