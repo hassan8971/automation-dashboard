@@ -20,6 +20,10 @@ use App\Http\Controllers\Admin\ProductImageController;
 use App\Http\Controllers\Admin\VideoController;
 use App\Http\Controllers\Admin\AdminChatController;
 use App\Http\Controllers\Admin\TodoController;
+use App\Http\Controllers\Admin\SubscriptionController;
+use App\Http\Controllers\Admin\GiftController;
+use App\Http\Controllers\Admin\AddonController;
+use App\Http\Controllers\Admin\RedeemCodeController;
 use App\Http\Controllers\Auth\LoginController as UserLoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\OtpLoginController;
@@ -104,6 +108,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/profile', [App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('profile.edit');
         Route::put('/profile', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
+
+        Route::resource('subscriptions', SubscriptionController::class);
+        Route::resource('gifts', GiftController::class);
+        Route::resource('addons', AddonController::class);
+        Route::resource('redeem-codes', RedeemCodeController::class);
     });
 });
 

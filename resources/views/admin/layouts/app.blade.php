@@ -36,6 +36,38 @@
                 <x-sidebar.sub-link title="افزودن محصول" href="{{ route('admin.products.create') }}" :active="request()->routeIs('admin.products.create')"/>
             </x-sidebar.group>
 
+            <x-sidebar.group title="اشتراک ها" :active="request()->routeIs('admin.subscriptions.*')">
+                <x-slot:icon>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                </x-slot:icon>
+                <x-sidebar.sub-link title="همه اشتراک ها" href="{{ route('admin.subscriptions.index') }}" :active="request()->routeIs('admin.subscriptions.index')"/>
+                <x-sidebar.sub-link title="افزودن اشتراک" href="{{ route('admin.subscriptions.create') }}" :active="request()->routeIs('admin.subscriptions.create')"/>
+            </x-sidebar.group>
+
+            <x-sidebar.group title="گیفت ها" :active="request()->routeIs('admin.gifts.*')">
+                <x-slot:icon>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                </x-slot:icon>
+                <x-sidebar.sub-link title="همه گیفت ها" href="{{ route('admin.gifts.index') }}" :active="request()->routeIs('admin.gifts.index')"/>
+                <x-sidebar.sub-link title="افزودن گیفت" href="{{ route('admin.gifts.create') }}" :active="request()->routeIs('admin.gifts.create')"/>
+            </x-sidebar.group>
+
+            <x-sidebar.group title="افزونه ها" :active="request()->routeIs('admin.addons.*')">
+                <x-slot:icon>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                </x-slot:icon>
+                <x-sidebar.sub-link title="همه افزونه ها" href="{{ route('admin.addons.index') }}" :active="request()->routeIs('admin.addons.index')"/>
+                <x-sidebar.sub-link title="افزودن افزونه" href="{{ route('admin.addons.create') }}" :active="request()->routeIs('admin.addons.create')"/>
+            </x-sidebar.group>
+
+            <x-sidebar.group title="ریدیم کد ها" :active="request()->routeIs('admin.redeem-codes.*')">
+                <x-slot:icon>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                </x-slot:icon>
+                <x-sidebar.sub-link title="همه ریدیم کد ها" href="{{ route('admin.redeem-codes.index') }}" :active="request()->routeIs('admin.redeem-codes.index')"/>
+                <x-sidebar.sub-link title="افزودن ریدیم کد" href="{{ route('admin.addons.create') }}" :active="request()->routeIs('admin.redeem-codes.create')"/>
+            </x-sidebar.group>
+
             <x-sidebar.group title="انواع بسته بندی" :active="request()->routeIs('admin.packaging-options.*')">
                 <x-slot:icon>
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>

@@ -17,8 +17,14 @@ class UserPanelController extends Controller
      */
     public function getUser(Request $request)
     {
-        // The resource automatically calculates 'next_action'
-        return new UserResource($request->user());
+        $user = $request->user()->load([
+            'devices', 
+            'installedApps', 
+            'redemptions', 
+            'activeSubscription.plan'
+        ]);
+
+        return new UserResource($user);
     }
 
     /**
