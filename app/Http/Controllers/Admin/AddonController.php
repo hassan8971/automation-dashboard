@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Addon;
+use App\Models\Gift;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -11,24 +12,26 @@ class AddonController extends Controller
 {
     public function index()
     {
-        $addons = Addon::latest()->get();
+        $addons = Addon::with('gift')->latest()->get();
         return view('admin.addons.index', compact('addons'));
     }
 
     public function create()
     {
-        return view('admin.addons.create');
+        $gifts = Gift::where('is_active', true)->get();
+        return view('admin.addons.create', compact('gifts'));
     }
 
     public function store(Request $request)
     {
         $this->saveAddon($request, new Addon());
-        return redirect()->route('admin.addons.index')->with('success', 'افزونه (Add-on) با موفقیت ایجاد شد.');
+        return redirect()->route('admin.addons.index')->with('success', 'افزونه با موفقیت ایجاد شد.');
     }
 
     public function edit(Addon $addon)
     {
-        return view('admin.addons.edit', compact('addon'));
+        $gifts = Gift::where('is_active', true)->get();
+        return view('admin.addons.edit', compact('addon', 'gifts'));
     }
 
     public function update(Request $request, Addon $addon)
@@ -49,25 +52,21 @@ class AddonController extends Controller
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'duration_in_days' => 'required|integer|min:1',
-            'supported_apps' => 'nullable|string',
+            // 'supported_apps' حذف شد
             'description' => 'nullable|string',
+            'gift_id' => 'nullable|exists:gifts,id',
             'is_active' => 'nullable|boolean',
         ]);
 
         $addon->name = $validated['name'];
-        $addon->slug = Str::slug($validated['name']); // Or handle slug uniqueness explicitly if needed
+        if (!$addon->exists || $addon->isDirty('name')) {
+            $addon->slug = Str::slug($validated['name']);
+        }
         $addon->price = $validated['price'];
         $addon->duration_in_days = $validated['duration_in_days'];
         $addon->description = $validated['description'];
+        $addon->gift_id = $validated['gift_id'];
         $addon->is_active = $request->has('is_active');
-
-        // Handle Array Conversion
-        if (!empty($validated['supported_apps'])) {
-            $apps = array_map('trim', explode(',', $validated['supported_apps']));
-            $addon->supported_apps = $apps;
-        } else {
-            $addon->supported_apps = [];
-        }
 
         $addon->save();
     }

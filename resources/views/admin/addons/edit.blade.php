@@ -3,6 +3,7 @@
 @section('title', 'ویرایش افزونه')
 
 @section('content')
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <div dir="rtl" class="max-w-4xl mx-auto">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold dark:text-white">

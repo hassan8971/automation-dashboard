@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->unsignedBigInteger('price');
             $table->integer('duration_in_days'); // Metadata: Duration
-            $table->json('supported_apps')->nullable(); // Metadata: Supported Applications
             $table->text('description')->nullable();
             $table->foreignId('gift_id')->nullable()->constrained('gifts')->nullOnDelete();
             $table->boolean('is_active')->default(true);

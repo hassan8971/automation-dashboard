@@ -24,7 +24,7 @@ class Gift extends Model
     ];
 
     /**
-     * The item being given as a gift (e.g., A SubscriptionPlan)
+     * The item being given as a gift (e.g., A Subscription)
      */
     public function rewardable(): MorphTo
     {
@@ -33,6 +33,6 @@ class Gift extends Model
 
     public function subscriptions(): HasMany
     {
-        return $this->hasMany(SubscriptionPlan::class, 'gift_id');
+        return $this->hasMany(Subscription::class, 'gift_id');
     }
 }

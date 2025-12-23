@@ -1,5 +1,5 @@
 @if ($errors->any())
-    <div class="bg-red-100 border border-red-400 text-red-700 dark:bg-red-900/50 dark:text-red-300 dark:border-red-600 px-4 py-3 rounded relative mb-6 text-right shadow-sm">
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6 text-right shadow-sm">
         <strong class="font-bold">خطا!</strong>
         <ul class="mt-2 list-disc list-inside text-sm">
             @foreach ($errors->all() as $error)
@@ -12,48 +12,72 @@
 <div class="space-y-6">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 text-right mb-2">نام افزونه (Add-on)</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 text-right mb-2">نام افزونه</label>
             <input type="text" name="name" value="{{ old('name', $addon->name ?? '') }}" 
-                   class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 text-right dark:bg-dark-paper dark:border-gray-600 dark:text-white" required placeholder="مثال: Arkade Bundle">
+                   class="block w-full px-4 py-2.5 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white" required>
         </div>
 
-        <div>
+        {{-- قیمت با فرمت ۳ رقمی (AlpineJS) --}}
+        <div x-data="{ 
+            rawPrice: '{{ old('price', $addon->price ?? '') }}',
+            format(value) {
+                if (!value) return '';
+                return value.toString().replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            },
+            update(event) {
+                let val = event.target.value.replace(/[^0-9]/g, '');
+                this.rawPrice = val;
+                event.target.value = this.format(val);
+            }
+        }">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 text-right mb-2">قیمت (تومان)</label>
-            <input type="number" name="price" value="{{ old('price', $addon->price ?? '') }}" 
-                   class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 text-right dark:bg-dark-paper dark:border-gray-600 dark:text-white" required placeholder="مثال: 50000">
+            
+            <input 
+                type="text" 
+                inputmode="numeric" 
+                class="block w-full px-4 py-2.5 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white text-left font-mono"
+                :value="format(rawPrice)"
+                @input="update($event)"
+                placeholder="مثال: 50,000"
+            >
+            <input type="hidden" name="price" :value="rawPrice">
         </div>
     </div>
 
-    <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 text-right mb-2">مدت اعتبار (روز)</label>
-        <input type="number" name="duration_in_days" value="{{ old('duration_in_days', $addon->duration_in_days ?? 30) }}" 
-               class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 text-right dark:bg-dark-paper dark:border-gray-600 dark:text-white" required>
-    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 text-right mb-2">مدت اعتبار (روز)</label>
+            <input type="number" name="duration_in_days" value="{{ old('duration_in_days', $addon->duration_in_days ?? 30) }}" 
+                   class="block w-full px-4 py-2.5 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white" required>
+        </div>
 
-    <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 text-right mb-2">اپلیکیشن‌های موجود در این باندل (با کاما , جدا کنید)</label>
-        <textarea name="supported_apps" rows="3" 
-                  class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 text-right dark:bg-dark-paper dark:border-gray-600 dark:text-white placeholder-gray-400" 
-                  placeholder="Arkade, Game1, Game2...">{{ old('supported_apps', isset($addon) && $addon->supported_apps ? implode(', ', $addon->supported_apps) : '') }}</textarea>
+        {{-- انتخاب هدیه --}}
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 text-right mb-2">انتخاب هدیه (اختیاری)</label>
+            <select name="gift_id" class="block w-full px-4 py-2.5 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white">
+                <option value="">-- بدون هدیه --</option>
+                @foreach($gifts as $g)
+                    <option value="{{ $g->id }}" @selected(old('gift_id', $addon->gift_id ?? '') == $g->id)>
+                        {{ $g->title }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
     </div>
-
+    
     <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 text-right mb-2">توضیحات (اختیاری)</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 text-right mb-2">توضیحات</label>
         <textarea name="description" rows="3" 
-                  class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 text-right dark:bg-dark-paper dark:border-gray-600 dark:text-white">{{ old('description', $addon->description ?? '') }}</textarea>
+                  class="block w-full px-4 py-2.5 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white">{{ old('description', $addon->description ?? '') }}</textarea>
     </div>
 
-    <div class="bg-gray-50 dark:bg-dark-hover rounded-lg p-4 border border-gray-100 dark:border-gray-700 flex items-center">
-        <input type="checkbox" name="is_active" id="is_active" value="1" 
-               @checked(old('is_active', $addon->is_active ?? true))
-               class="h-5 w-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500 dark:bg-dark-bg dark:border-gray-600 dark:checked:bg-purple-600 cursor-pointer">
-        <label for="is_active" class="mr-3 block text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-            این افزونه فعال باشد
-        </label>
+    <div class="flex items-center">
+        <input type="checkbox" name="is_active" id="is_active" value="1" @checked(old('is_active', $addon->is_active ?? true)) class="w-4 h-4 text-purple-600 rounded">
+        <label for="is_active" class="mr-3 block text-sm font-semibold text-gray-700 dark:text-gray-300">این افزونه فعال باشد</label>
     </div>
 
-    <div class="flex justify-end pt-4">
-        <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-md transition-transform transform active:scale-95">
+    <div class="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+        <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-md">
             ذخیره اطلاعات
         </button>
     </div>

@@ -88,7 +88,7 @@ class GiftController extends Controller
         $gift->generated_access_level = null;
 
         if ($validated['type'] === 'subscription') {
-            $gift->rewardable_type = SubscriptionPlan::class;
+            $gift->rewardable_type = Subscription::class;
             $gift->rewardable_id = $validated['reward_subscription_id'];
         } 
         elseif ($validated['type'] === 'addon') {

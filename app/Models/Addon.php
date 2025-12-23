@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Addon extends Model
 {
@@ -15,21 +16,20 @@ class Addon extends Model
         'slug',
         'price',
         'duration_in_days',
-        'supported_apps',
         'description',
+        'gift_id',
         'is_active',
     ];
 
     protected $casts = [
-        'supported_apps' => 'array',
         'is_active' => 'boolean',
     ];
 
     /**
      * Get all gifts attached to this Add-on (As a Trigger).
      */
-    public function gifts(): MorphMany
+    public function gift(): BelongsTo
     {
-        return $this->morphMany(Gift::class, 'triggerable');
+        return $this->belongsTo(Gift::class);
     }
 }
