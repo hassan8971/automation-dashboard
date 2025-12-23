@@ -13,16 +13,14 @@ return new class extends Migration
     {
         Schema::create('order_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('order_id')->constrained('orders')->onDelete('cascade');
+            $table->foreignId('order_id')->constrained()->onDelete('cascade');
             
-            // Link to the variant, but allow it to be deleted (set null)
-            $table->foreignId('product_variant_id')->nullable()->constrained('product_variants')->onDelete('set null');
+            // اصلاح: اتصال مستقیم به جدول products به جای product_variants
+            $table->foreignId('product_id')->nullable()->constrained('products')->nullOnDelete();
             
-            // Denormalize data for long-term order history
-            // This is crucial. If the product name/price changes later, the order history remains correct.
-            $table->string('product_name');
-            $table->unsignedInteger('quantity');
-            $table->unsignedInteger('price'); // Price per item, in cents
+            $table->unsignedBigInteger('price'); // قیمت در لحظه خرید
+            $table->integer('quantity')->default(1);
+            $table->timestamps();
         });
     }
 

@@ -3,345 +3,247 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Category;
 use App\Models\Product;
-use App\Models\Video;
-use App\Models\Size;
-use App\Models\Color;
-use App\Models\PackagingOption;
-use App\Models\BuySource;
+use App\Models\Category;
+use App\Models\Subscription;
+use App\Models\ProductScreenshot;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
+    public function index()
     {
-        // ۱. دریافت همه‌ی دسته‌بندی‌ها برای فیلتر
-        $categories = Category::orderBy('name')->get();
-        $selectedCategory = null;
-
-        // ۲. شروع ساخت کوئری محصولات
-        $query = Product::with(['category', 'admin']);
-
-        // ۳. اعمال فیلتر در صورت وجود
-        if ($request->filled('category_id')) {
-            $categoryId = $request->input('category_id');
-            $query->where('category_id', $categoryId);
-            $selectedCategory = $categories->find($categoryId);
-        }
-
-        // ۴. دریافت تعداد محصولات (فیلتر شده یا کل)
-        $productCount = $query->count();
-
-        // ۵. دریافت نتایج نهایی با صفحه‌بندی
-        $products = $query->latest()
-                          ->paginate(20)
-                          ->withQueryString(); // <-- حفظ پارامترها در صفحه‌بندی
-
-        return view('admin.products.index', compact(
-            'products',
-            'categories',       // برای فیلتر
-            'productCount',     // برای نمایش تعداد
-            'selectedCategory'  // برای نمایش عنوان فیلتر
-        ));
+        $products = Product::with('category')->latest()->get();
+        return view('admin.products.index', compact('products'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         $categories = Category::all();
-        $sizes = Size::orderBy('name')->get();
-        $colors = Color::orderBy('name')->get();
-        $buySources = BuySource::orderBy('name')->get();
-        $allProducts = Product::select('id', 'name')->get(); 
-        $allVideos = Video::all();
-        $allPackagingOptions = PackagingOption::where('is_active', true)->get();
-        
-        $latestProduct = Product::orderBy('id', 'desc')->first();
-        $nextId = $latestProduct ? $latestProduct->id + 1 : 1;
-        $newProductId = str_pad($nextId, 8, '0', STR_PAD_LEFT);
-        while (Product::where('product_id', $newProductId)->exists()) {
-            $nextId++;
-            $newProductId = str_pad($nextId, 8, '0', STR_PAD_LEFT);
-        }
-
-        $product = new Product([
-            'product_id' => $newProductId,
-            'is_visible' => true,
-            'is_for_men' => false,
-            'is_for_women' => false,
-        ]);
-        
-        // Load an empty relationship for the create form
-        // (این کار باعث می‌شود $product->videos->pluck('id') در ویو خطا ندهد)
-        $product->load('videos', 'relatedProducts'); 
-
-        return view('admin.products.create', compact(
-            'categories', 
-            'product', 
-            'sizes', 
-            'colors',
-            'buySources',
-            'allProducts',
-            'allVideos',
-            'allPackagingOptions'
-        ));
+        $subscriptions = Subscription::where('is_active', true)->get();
+        return view('admin.products.create', compact('categories', 'subscriptions'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     * --- اصلاح شده ---
-     */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            // Product Details
-            'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:products,slug',
-            'category_id' => 'required|exists:categories,id',
-            'description' => 'nullable|string',
-            'care_and_maintenance' => 'nullable|string',
-            'product_id' => 'required|string|max:255|unique:products,product_id',
-            'invoice_number' => 'nullable|string|max:255|unique:products,invoice_number',
-            'is_visible' => 'boolean',
-            'is_for_men' => 'boolean',
-            'is_for_women' => 'boolean',
-
-            // Variants Validation (بر اساس فرم شما)
-            'variants' => 'nullable|array',
-            'variants.*.size' => 'required|string|max:255',
-            'variants.*.color' => 'required|string|max:255',
-            'variants.*.price' => 'required_with:variants|integer|min:0',
-            'variants.*.discount_price' => 'nullable|integer|min:0|lt:variants.*.price',
-            'variants.*.buy_price' => 'nullable|integer|min:0',
-            'variants.*.stock' => 'required_with:variants|integer|min:0',
-            'variants.*.buy_source_id' => 'nullable|integer|exists:buy_sources,id',
-
-            // Media Validation
-            'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            // (اعتبارسنجی فایل‌های ویدیویی حذف شد، چون دیگر مستقیماً آپلود نمی‌شوند)
-            // 'videos' => ... 
-            
-            'video_embeds' => 'nullable|array', 
-            'video_embeds.*' => 'nullable|string|regex:/<iframe.*<\/iframe>/i', 
-
-            'related_product_ids' => 'nullable|array',
-            'related_product_ids.*' => 'exists:products,id',
-
-            // --- FIX: Add validation for selected video IDs ---
-            'video_ids' => 'nullable|array',
-            'video_ids.*' => 'exists:videos,id',
-
-            'packaging_option_ids' => 'nullable|array',
-            'packaging_option_ids.*' => 'exists:packaging_options,id',
-        ], [
-            'variants.*.size.required' => 'فیلد سایز برای همه‌ی متغیرها الزامی است.',
-            'variants.*.color.required' => 'فیلد رنگ برای همه‌ی متغیرها الزامی است.',
-            'variants.*.discount_price.lt' => 'قیمت با تخفیf باید کمتر از قیمت اصلی باشد.',
-            'video_embeds.*.regex' => 'کد الصاقی (embed) معتبر نیست. باید شامل تگ <iframe> باشد.'
-        ]);
-        
-        // --- آماده‌سازی داده‌ها ---
-        $validated['slug'] = empty($request->slug) ? Str::slug($request->name) . '-' . uniqid() : Str::slug($request->slug);
-        $validated['admin_id'] = Auth::guard('admin')->id();
-        $validated['is_visible'] = $request->boolean('is_visible');
-        $validated['is_for_men'] = $request->boolean('is_for_men');
-        $validated['is_for_women'] = $request->boolean('is_for_women');
-        // --- پایان آماده‌سازی ---
-
-        DB::beginTransaction();
-        try {
-            // 1. ایجاد محصول اصلی
-            $product = Product::create($validated);
-
-            // 2. ایجاد متغیرها
-            if ($request->has('variants')) {
-                foreach ($request->variants as $variantData) {
-                    $product->variants()->create($variantData);
-                }
-            }
-
-            // 3. ذخیره تصاویر
-            if ($request->hasFile('images')) {
-                foreach ($request->file('images') as $file) {
-                    $path = $file->store('products', 'public');
-                    $product->images()->create(['path' => $path, 'alt_text' => $product->name]);
-                }
-            }
-            
-            // 4. ذخیره ویدیوهای الصاقی (Embed)
-            // (این بخش را نگه داشتیم، اما می‌توانید آن را حذف کنید اگر دیگر لازم نیست)
-            if ($request->has('video_embeds')) {
-                foreach ($request->video_embeds as $embedCode) {
-                    if (!empty($embedCode)) {
-                        // This uses the old logic, you might want to remove this
-                        // and force users to use the Video Library
-                        $product->videos()->create([
-                            'embed_code' => $embedCode,
-                            'alt_text' => $product->name . ' (embed)',
-                            'type' => 'embed',
-                        ]);
-                    }
-                }
-            }
-        
-            // --- FIX: 5. ذخیره ویدیوهای مرتبط (از کتابخانه) ---
-            if ($request->has('video_ids')) {
-                $product->videos()->sync($request->video_ids);
-            }
-
-            // 6. ذخیره محصولات مرتبط
-            if ($request->has('related_product_ids')) {
-                $product->relatedProducts()->sync($request->related_product_ids);
-            }
-
-            // 7. ذخیره بسته‌بندی‌های مرتبط (این بلاک را اضافه کنید)
-            if ($request->has('packaging_option_ids')) {
-                $product->packagingOptions()->sync($request->packaging_option_ids);
-            }
-
-            DB::commit();
-
-            return redirect()->route('admin.products.edit', $product)->with('success', 'محصول با موفقیت ایجاد شد.');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()->with('error', 'خطا در ایجاد محصول: ' . $e->getMessage())->withInput();
-        }
+        $this->saveProduct($request, new Product());
+        return redirect()->route('admin.products.index')->with('success', 'اپلیکیشن با موفقیت ایجاد شد.');
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Product $product)
     {
         $categories = Category::all();
-        $sizes = Size::orderBy('name')->get();
-        $colors = Color::orderBy('name')->get();
-        $buySources = BuySource::orderBy('name')->get();
-        
-        $product->load('variants', 'images', 'videos', 'relatedProducts'); 
-        
-        $allProducts = Product::where('id', '!=', $product->id)
-                                ->select('id', 'name')
-                                ->get();
-
-        $allVideos = Video::all();
-        $avg_sale_price = $product->variants->where('discount_price', '>', 0)->avg('discount_price');
-        $avg_buy_price = $product->variants->where('buy_price', '>', 0)->avg('buy_price');
-        $allPackagingOptions = PackagingOption::where('is_active', true)->get();
-        
-        return view('admin.products.edit', compact('product', 'categories', 'sizes', 'colors', 'buySources', 'allProducts', 'allVideos', 'allPackagingOptions', 'avg_sale_price', 'avg_buy_price'));
+        $subscriptions = Subscription::where('is_active', true)->get();
+        return view('admin.products.edit', compact('product', 'categories', 'subscriptions'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     * --- اصلاح شده ---
-     */
     public function update(Request $request, Product $product)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'description' => 'nullable|string',
-            'care_and_maintenance' => 'nullable|string',
-            'product_id' => ['required', 'string', 'max:255', Rule::unique('products')->ignore($product->id)],
-            'invoice_number' => [
-                'nullable',
-                'string',
-                'max:255',
-                // ستون invoice_number را چک کن
-                // و ردیفی که id آن برابر $product->id است را نادیده بگیر
-                Rule::unique('products', 'invoice_number')->ignore($product->id)
-            ],
-            'slug' => ['nullable', 'string', 'max:255', Rule::unique('products')->ignore($product->id)],
-            'is_visible' => 'boolean',
-            'is_for_men' => 'boolean',
-            'is_for_women' => 'boolean',
-            'related_product_ids' => 'nullable|array',
-            'related_product_ids.*' => 'exists:products,id',
-            
-            // --- FIX: Add validation for selected video IDs ---
-            'video_ids' => 'nullable|array',
-            'video_ids.*' => 'exists:videos,id',
-            'packaging_option_ids' => 'nullable|array',
-            'packaging_option_ids.*' => 'exists:packaging_options,id'
-
-        ]);
-
-        if (empty($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['name']) . '-' . $product->id;
-        }
-
-        $validated['is_visible'] = $request->boolean('is_visible');
-        $validated['is_for_men'] = $request->boolean('is_for_men');
-        $validated['is_for_women'] = $request->boolean('is_for_women');
-
-        $product->update($validated);
-
-        if ($request->has('related_product_ids')) {
-            $product->relatedProducts()->sync($request->related_product_ids);
-        } else {
-            $product->relatedProducts()->sync([]);
-        }
-
-        // --- Add sync logic for videos ---
-        if ($request->has('video_ids')) {
-            $product->videos()->sync($request->video_ids);
-        } else {
-            $product->videos()->sync([]);
-        }
-
-        if ($request->has('packaging_option_ids')) {
-            $product->packagingOptions()->sync($request->packaging_option_ids);
-        } else {
-            $product->packagingOptions()->sync([]);
-        }
-        
-
-        return redirect()->route('admin.products.edit', $product)
-            ->with('success', 'محصول با موفقیت به‌روزرسانی شد.');
+        $this->saveProduct($request, $product);
+        return redirect()->route('admin.products.index')->with('success', 'اپلیکیشن ویرایش شد.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Product $product)
     {
-        $product->load('images', 'videos');
-
-        foreach ($product->images as $image) {
-            Storage::disk('public')->delete($image->path);
-        }
-        // We no longer delete videos, just detach them
-        // (unless they are 'upload' type and you want to delete the file)
-        
-        $product->delete(); // This should detach pivot table records
-
-        return redirect()->route('admin.products.index')
-            ->with('success', 'محصول (و تمام فایل‌های مرتبط) با موفقیت حذف شد.');
+        $product->delete();
+        return redirect()->route('admin.products.index')->with('success', 'اپلیکیشن حذف شد.');
     }
 
     /**
-     * Helper function to generate shoe size list.
+     * متد جدید برای دریافت اطلاعات از آیتونز
      */
-    private function getSizeList(): array
+    public function fetchItunes(Request $request)
     {
-        $sizes = [];
-        for ($i = 36.5; $i <= 47; $i += 0.5) {
-            $sizes[] = (string)$i;
+        // 1. بررسی ورودی
+        $id = $request->input('id');
+        if (!$id) {
+            return response()->json(['success' => false, 'message' => 'لطفا شناسه App ID را وارد کنید.']);
         }
-        return $sizes;
+
+        try {
+            // 2. درخواست به اپل (با غیرفعال کردن بررسی SSL برای لوکال)
+            $response = Http::withoutVerifying()->timeout(15)->get("https://itunes.apple.com/lookup", [
+                'id' => $id,
+                'entity' => 'software',
+                'country' => 'us'
+            ]);
+
+            if ($response->failed()) {
+                Log::error('Apple API Connection Failed: ' . $response->body());
+                return response()->json(['success' => false, 'message' => 'خطا در اتصال به اپ‌استور.']);
+            }
+
+            $data = $response->json();
+
+            if (empty($data['results']) || !is_array($data['results'])) {
+                return response()->json(['success' => false, 'message' => 'اپلیکیشنی با این شناسه یافت نشد.']);
+            }
+
+            $app = $data['results'][0];
+
+            // 3. آماده‌سازی داده‌ها
+            $sizeMB = isset($app['fileSizeBytes']) ? round($app['fileSizeBytes'] / 1024 / 1024, 1) . ' MB' : '';
+
+            // پیدا کردن یا ساخت دسته‌بندی
+            $categoryId = null;
+            if (isset($app['primaryGenreName'])) {
+                $category = Category::firstOrCreate(
+                    ['name' => $app['primaryGenreName']],
+                    ['slug' => Str::slug($app['primaryGenreName'])]
+                );
+                $categoryId = $category->id;
+            }
+
+            // ادغام اسکرین‌شات‌ها
+            $screenshots = array_merge(
+                $app['screenshotUrls'] ?? [], 
+                $app['ipadScreenshotUrls'] ?? []
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'title' => $app['trackName'] ?? '',
+                    'name_en' => $app['trackName'] ?? '',
+                    'bundle_id' => $app['bundleId'] ?? '',
+                    'version' => $app['version'] ?? '',
+                    'price_appstore' => $app['price'] ?? 0,
+                    'size' => $sizeMB,
+                    'seller' => $app['artistName'] ?? '',
+                    'seller_website' => $app['sellerUrl'] ?? '',
+                    'description' => $app['description'] ?? '',
+                    'age_rating' => $app['contentAdvisoryRating'] ?? '',
+                    'appstore_link' => $app['trackViewUrl'] ?? '',
+                    'category_id' => $categoryId,
+                    'icon_url' => $app['artworkUrl512'] ?? '',
+                    'screenshots_urls' => $screenshots,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Fetch Itunes Exception: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'خطای سرور: ' . $e->getMessage()]);
+        }
+    }
+
+    private function saveProduct(Request $request, Product $product)
+    {
+        // تمیزکاری قیمت‌ها
+        $prices = ['price_sibaneh', 'price_appstore', 'pwa_price', 'internal_price'];
+        foreach ($prices as $field) {
+            if ($request->has($field)) {
+                $val = str_replace(',', '', $request->input($field));
+                if ($val === '') $val = null;
+                $request->merge([$field => $val]);
+            }
+        }
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'name_fa' => 'nullable|string|max:255',
+            'category_id' => 'nullable|exists:categories,id',
+            'price_sibaneh' => 'nullable|numeric',
+            'price_appstore' => 'nullable|numeric',
+            'bundle_id' => 'nullable|string',
+            'version' => 'nullable|string',
+            'fetched_icon_url' => 'nullable|url',
+            'fetched_screenshots' => 'nullable|array',
+            'fetched_screenshots.*' => 'url',
+            // بقیه ولیدیشن‌ها...
+        ]);
+
+        // ذخیره فیلدهای ساده
+        $product->title = $request->title;
+        $product->name_fa = $request->name_fa;
+        $product->name_en = $request->name_en;
+        if (!$product->exists || $product->isDirty('title')) {
+            $product->slug = Str::slug($request->title . '-' . Str::random(4));
+        }
+        $product->category_id = $request->category_id;
+        $product->price_sibaneh = $request->price_sibaneh ?? 0;
+        $product->price_appstore = $request->price_appstore ?? 0;
+        $product->bundle_id = $request->bundle_id;
+        $product->version = $request->version;
+        $product->size = $request->size;
+        $product->seller = $request->seller;
+        $product->seller_website = $request->seller_website;
+        $product->is_stable = $request->has('is_stable');
+        $product->availability = $request->availability ?? 'available';
+        $product->description = $request->description;
+        $product->how_to_install_url = $request->how_to_install_url;
+        $product->appstore_link = $request->appstore_link;
+        $product->age_rating = $request->age_rating;
+        $product->app_updated_at = $request->app_updated_at;
+
+        // ذخیره فایل‌ها: اولویت با فایل آپلودی است، بعد URL فچ شده
+        if ($request->hasFile('icon')) {
+            $product->icon_path = $request->file('icon')->store('products/icons', 'public');
+        } elseif ($request->filled('fetched_icon_url') && !$product->icon_path) {
+            // دانلود آیکون از URL
+            try {
+                $contents = file_get_contents($request->fetched_icon_url);
+                if ($contents) {
+                    $filename = 'fetched_icon_' . Str::random(10) . '.jpg';
+                    Storage::disk('public')->put('products/icons/' . $filename, $contents);
+                    $product->icon_path = 'products/icons/' . $filename;
+                }
+            } catch (\Exception $e) {
+                // اگر دانلود عکس فیل شد، سخت نگیر
+                Log::warning('Failed to download icon: ' . $e->getMessage());
+            }
+        }
+
+        if ($request->hasFile('banner_detail')) {
+            $product->banner_detail_path = $request->file('banner_detail')->store('products/banners', 'public');
+        }
+        if ($request->hasFile('banner_vitrin')) {
+            $product->banner_vitrin_path = $request->file('banner_vitrin')->store('products/banners', 'public');
+        }
+
+        // Publish Settings
+        $product->type_pwa = $request->has('type_pwa');
+        $product->pwa_price = $request->pwa_price;
+        $product->pwa_url = $request->pwa_url;
+        $product->type_internal = $request->has('type_internal');
+        $product->internal_price = $request->internal_price;
+        $product->internal_url = $request->internal_url;
+        $product->type_appstore = $request->has('type_appstore');
+        $product->native_appstore_url = $request->native_appstore_url;
+        $product->native_appstore_username = $request->native_appstore_username;
+        $product->native_appstore_password = $request->native_appstore_password;
+        
+        $product->save();
+
+        if ($request->has('subscriptions')) {
+            $product->subscriptions()->sync($request->subscriptions);
+        }
+
+        // Screenshots Upload
+        if ($request->hasFile('screenshots')) {
+            foreach ($request->file('screenshots') as $file) {
+                $path = $file->store('products/screenshots', 'public');
+                ProductScreenshot::create(['product_id' => $product->id, 'image_path' => $path]);
+            }
+        }
+        // Fetched Screenshots
+        if ($request->filled('fetched_screenshots')) {
+            foreach ($request->fetched_screenshots as $url) {
+                try {
+                    $contents = file_get_contents($url);
+                    if ($contents) {
+                        $filename = 'fetched_screen_' . Str::random(10) . '.jpg';
+                        Storage::disk('public')->put('products/screenshots/' . $filename, $contents);
+                        ProductScreenshot::create([
+                            'product_id' => $product->id, 
+                            'image_path' => 'products/screenshots/' . $filename
+                        ]);
+                    }
+                } catch (\Exception $e) { continue; }
+            }
+        }
     }
 }

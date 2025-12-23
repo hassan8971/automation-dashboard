@@ -113,6 +113,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('gifts', GiftController::class);
         Route::resource('addons', AddonController::class);
         Route::resource('redeem-codes', RedeemCodeController::class);
+
+        Route::post('products/fetch-itunes', [ProductController::class, 'fetchItunes'])->name('products.fetch-itunes');
     });
 });
 
