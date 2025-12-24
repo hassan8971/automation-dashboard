@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use App\Models\MenuItem;
+use App\Models\User;
+use App\Observers\UserObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -41,5 +43,7 @@ class AppServiceProvider extends ServiceProvider
             $view->with('headerMenuItems', $headerMenuItems)
                  ->with('footerMenuItems', $footerMenuItems);
         });
+
+        User::observe(UserObserver::class);
     }
 }

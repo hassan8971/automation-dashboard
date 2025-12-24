@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\GiftController;
 use App\Http\Controllers\Admin\AddonController;
 use App\Http\Controllers\Admin\RedeemCodeController;
+use App\Http\Controllers\Admin\WalletController;
 use App\Http\Controllers\Auth\LoginController as UserLoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\OtpLoginController;
@@ -115,6 +116,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('redeem-codes', RedeemCodeController::class);
 
         Route::post('products/fetch-itunes', [ProductController::class, 'fetchItunes'])->name('products.fetch-itunes');
+
+        Route::get('wallets', [WalletController::class, 'index'])->name('wallets.index');
+        Route::get('wallets/{wallet}', [WalletController::class, 'show'])->name('wallets.show');
+        Route::post('wallets/{wallet}/update-balance', [WalletController::class, 'updateBalance'])->name('wallets.update-balance');
     });
 });
 
