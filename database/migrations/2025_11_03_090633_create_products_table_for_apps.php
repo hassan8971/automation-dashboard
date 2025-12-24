@@ -54,6 +54,10 @@ return new class extends Migration
             $table->string('appstore_link')->nullable(); // Original Link on Apple Appstore
             $table->string('age_rating')->nullable(); // e.g. +4, +12
             $table->text('description')->nullable(); // Intro/Description
+            $table->text('description_fa')->nullable();
+
+            $table->text('release_notes')->nullable();
+            $table->text('release_notes_fa')->nullable();
             
             // --- Visual Metadata ---
             $table->string('icon_path')->nullable();

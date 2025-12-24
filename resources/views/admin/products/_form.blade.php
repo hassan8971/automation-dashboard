@@ -16,6 +16,7 @@
     loadingFetch: false,
     fetchedIcon: '',
     fetchedScreenshots: [],
+    translationError: '',
     
     formatPrice(v) { return v ? v.toString().replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''; },
 
@@ -59,9 +60,23 @@
             setVal('size', data.size);
             setVal('seller', data.seller);
             setVal('seller_website', data.seller_website);
+
+            
             setVal('description', data.description);
+            setVal('description_fa', data.description_fa);
+
+            setVal('release_notes', data.release_notes);
+            setVal('release_notes_fa', data.release_notes_fa);
+
+            if (data.translation_error) {
+                this.translationError = '⚠️ ' + data.translation_error;
+            } else {
+                this.translationError = ''; // پاک کردن خطا در صورت موفقیت
+            }
+
             setVal('appstore_link', data.appstore_link);
             setVal('native_appstore_url', data.appstore_link); // پر کردن لینک اپ استور در بخش انتشار
+            
 
             // قیمت
             let priceInput = document.querySelector(`[name='price_appstore_display']`);
@@ -231,10 +246,32 @@
             </div>
         </div>
 
-        {{-- Description --}}
+        {{-- Description English --}}
         <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">توضیحات / معرفی</label>
-            <textarea name="description" rows="4" class="w-full px-4 py-2 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white">{{ old('description', $product->description ?? '') }}</textarea>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">توضیحات اصلی (انگلیسی)</label>
+            <textarea name="description" rows="4" class="w-full px-4 py-2 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white ltr">{{ old('description', $product->description ?? '') }}</textarea>
+        </div>
+
+        {{-- Description Persian (NEW) --}}
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">توضیحات فارسی (ترجمه هوشمند)</label>
+            <textarea name="description_fa" rows="4" class="w-full px-4 py-2 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white" placeholder="پس از دریافت اطلاعات، ترجمه اینجا قرار می‌گیرد...">{{ old('description_fa', $product->description_fa ?? '') }}</textarea>
+        
+            <p x-show="translationError" x-text="translationError" class="text-red-500 text-xs mt-2 font-bold"></p>
+        </div>
+
+        <hr class="dark:border-gray-700 my-6">
+
+        {{-- Release Notes English --}}
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">تغییرات نسخه (انگلیسی)</label>
+            <textarea name="release_notes" rows="3" class="w-full px-4 py-2 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white ltr">{{ old('release_notes', $product->release_notes ?? '') }}</textarea>
+        </div>
+
+        {{-- Release Notes Persian --}}
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">تغییرات نسخه (فارسی)</label>
+            <textarea name="release_notes_fa" rows="3" class="w-full px-4 py-2 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white" placeholder="ترجمه خودکار تغییرات...">{{ old('release_notes_fa', $product->release_notes_fa ?? '') }}</textarea>
         </div>
     </div>
 

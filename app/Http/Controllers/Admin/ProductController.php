@@ -12,9 +12,18 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use App\Services\SibanehAiService;
 
 class ProductController extends Controller
 {
+    protected $ai;
+
+    // تزریق سرویس در کانستراکتور
+    public function __construct(SibanehAiService $ai)
+    {
+        $this->ai = $ai;
+    }
+
     public function index()
     {
         $products = Product::with('category')->latest()->get();
@@ -56,16 +65,15 @@ class ProductController extends Controller
     /**
      * متد جدید برای دریافت اطلاعات از آیتونز
      */
-    public function fetchItunes(Request $request)
+public function fetchItunes(Request $request)
     {
-        // 1. بررسی ورودی
         $id = $request->input('id');
         if (!$id) {
             return response()->json(['success' => false, 'message' => 'لطفا شناسه App ID را وارد کنید.']);
         }
 
         try {
-            // 2. درخواست به اپل (با غیرفعال کردن بررسی SSL برای لوکال)
+            // 1. دریافت اطلاعات از اپ‌استور
             $response = Http::withoutVerifying()->timeout(15)->get("https://itunes.apple.com/lookup", [
                 'id' => $id,
                 'entity' => 'software',
@@ -73,22 +81,19 @@ class ProductController extends Controller
             ]);
 
             if ($response->failed()) {
-                Log::error('Apple API Connection Failed: ' . $response->body());
+                Log::error('Apple API Error: ' . $response->body());
                 return response()->json(['success' => false, 'message' => 'خطا در اتصال به اپ‌استور.']);
             }
 
             $data = $response->json();
-
             if (empty($data['results']) || !is_array($data['results'])) {
                 return response()->json(['success' => false, 'message' => 'اپلیکیشنی با این شناسه یافت نشد.']);
             }
 
             $app = $data['results'][0];
 
-            // 3. آماده‌سازی داده‌ها
+            // 2. آماده‌سازی فیلدهای عادی
             $sizeMB = isset($app['fileSizeBytes']) ? round($app['fileSizeBytes'] / 1024 / 1024, 1) . ' MB' : '';
-
-            // پیدا کردن یا ساخت دسته‌بندی
             $categoryId = null;
             if (isset($app['primaryGenreName'])) {
                 $category = Category::firstOrCreate(
@@ -97,12 +102,53 @@ class ProductController extends Controller
                 );
                 $categoryId = $category->id;
             }
+            $screenshots = array_merge($app['screenshotUrls'] ?? [], $app['ipadScreenshotUrls'] ?? []);
 
-            // ادغام اسکرین‌شات‌ها
-            $screenshots = array_merge(
-                $app['screenshotUrls'] ?? [], 
-                $app['ipadScreenshotUrls'] ?? []
-            );
+            // 3. ترجمه توضیحات (همراه با لاگ و خطایابی)
+            $descEn = $app['description'] ?? '';
+            $descFa = '';
+
+            $notesEn = $app['releaseNotes'] ?? '';
+            $notesFa = '';
+
+
+            $translationError = null;
+
+            if ($descEn) {
+                try {
+                    Log::info("Starting AI Translation for App ID: $id");
+                    
+                    $prompt = "متن زیر توضیحات کامل یک اپلیکیشن است. لطفاً تمام متن را بدون کم و کاست و بدون خلاصه کردن، به فارسی روان و جذاب ترجمه کن. ساختار پاراگراف‌ها حفظ شود:\n\n" . $descEn;
+                    
+                    // فراخوانی سرویس هوش مصنوعی
+                    $descFa = $this->ai->generateText($prompt);
+
+                    if (empty($descFa)) {
+                        Log::warning("AI returned empty translation for App ID: $id");
+                        $translationError = 'هوش مصنوعی پاسخی نداد (خروجی خالی). لاگ‌ها را بررسی کنید.';
+                    } else {
+                        Log::info("AI Translation Successful for App ID: $id");
+                    }
+
+                } catch (\Exception $e) {
+                    Log::error("AI Translation Exception: " . $e->getMessage());
+                    $translationError = 'خطا در سرویس ترجمه: ' . $e->getMessage();
+                }
+            } else {
+                $translationError = 'توضیحات انگلیسی برای ترجمه یافت نشد.';
+            }
+
+            if ($notesEn) {
+                try {
+                    // پرامپت مخصوص تغییرات نسخه
+                    $prompt = "متن زیر لیست تغییرات (Release Notes) یک اپلیکیشن است. آن را به فارسی روان ترجمه کن. لیست‌بندی و خطوط جدید را حفظ کن. فقط و فقط به فارسی ترجمه کن:\n\n" . $notesEn;
+                    
+                    $notesFa = $this->ai->generateText($prompt);
+                    
+                } catch (\Exception $e) {
+                    Log::error("AI Release Notes Translation Error: " . $e->getMessage());
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -115,7 +161,16 @@ class ProductController extends Controller
                     'size' => $sizeMB,
                     'seller' => $app['artistName'] ?? '',
                     'seller_website' => $app['sellerUrl'] ?? '',
-                    'description' => $app['description'] ?? '',
+                    'description' => $descEn,
+        
+                    'description_fa' => $descFa,
+
+                    'release_notes' => $notesEn,
+                    'release_notes_fa' => $notesFa,
+
+                    'translation_error' => $translationError,
+                    
+                    
                     'age_rating' => $app['contentAdvisoryRating'] ?? '',
                     'appstore_link' => $app['trackViewUrl'] ?? '',
                     'category_id' => $categoryId,
@@ -174,6 +229,9 @@ class ProductController extends Controller
         $product->is_stable = $request->has('is_stable');
         $product->availability = $request->availability ?? 'available';
         $product->description = $request->description;
+        $product->description_fa = $request->description_fa;
+        $product->release_notes = $request->release_notes;
+        $product->release_notes_fa = $request->release_notes_fa;
         $product->how_to_install_url = $request->how_to_install_url;
         $product->appstore_link = $request->appstore_link;
         $product->age_rating = $request->age_rating;
