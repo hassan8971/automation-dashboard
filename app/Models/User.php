@@ -122,13 +122,12 @@ class User extends Authenticatable
     /**
      * Get the current active subscription (if any).
      */
-    public function activeSubscription(): HasOne
-    {
-        return $this->hasOne(UserSubscription::class)
-                    ->where('is_active', true)
-                    ->where('expires_at', '>', now())
-                    ->latestOfMany();
-    }
+    public function activeSubscription()
+{
+    return $this->hasOne(UserSubscription::class)->latestOfMany()
+        ->where('status', 'active') // <--- تغییر به وضعیت جدید
+        ->where('expires_at', '>', now());
+}
 
     /**
      * --- DYNAMIC STATUS ACCESSOR ---
@@ -193,4 +192,8 @@ class User extends Authenticatable
         ]);
     }
 
+    public function wallet()
+    {
+        return $this->hasOne(Wallet::class);
+    }
 }

@@ -22,8 +22,6 @@ class AdminSeeder extends Seeder
         if (Admin::count() == 0) {
             Admin::factory()->create([
                 'name' => 'Admin User',
-                'email' => 'admin@example.com',
-                'username' => 'admin',
                 'mobile' => '09148971850', // شماره موبایل برای ورود ادمین
             ]);
         }

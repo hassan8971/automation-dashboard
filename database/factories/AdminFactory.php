@@ -19,10 +19,10 @@ class AdminFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => 'Admin User',
-            'email' => $this->faker->unique()->safeEmail(),
+            'name' => 'Admin',
+            'username' => 'Admin',
+            'email' => 'hassan@gmail.com',
             'mobile' => $this->faker->unique()->e164PhoneNumber(),
-            'password' => Hash::make('password'), // Default password is 'password'
         ];
     }
 }

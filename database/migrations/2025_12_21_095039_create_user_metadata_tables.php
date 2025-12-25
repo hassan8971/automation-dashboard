@@ -58,11 +58,18 @@ return new class extends Migration
         // 5. User Subscriptions (To track active/expired status)
         Schema::create('user_subscriptions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('subscription_plan_id')->constrained('subscriptions');
-            $table->dateTime('started_at');
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('subscription_id')->constrained('subscriptions'); // The plan ID
+            
+            $table->dateTime('starts_at');
             $table->dateTime('expires_at');
-            $table->boolean('is_active')->default(true); // Manually cancellable
+            
+            // Status: active, expired, cancelled
+            $table->string('status')->default('active');
+            
+            // Snapshot of price at purchase time (good for history)
+            $table->unsignedBigInteger('price_paid');
+            
             $table->timestamps();
         });
 

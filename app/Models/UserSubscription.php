@@ -3,18 +3,37 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class UserSubscription extends Model
 {
-    protected $fillable = ['user_id', 'subscription_plan_id', 'started_at', 'expires_at', 'is_active'];
+    protected $fillable = [
+        'user_id', 
+        'subscription_id', 
+        'starts_at', 
+        'expires_at', 
+        'status', 
+        'price_paid'
+    ];
+
     protected $casts = [
-        'started_at' => 'datetime',
+        'starts_at' => 'datetime',
         'expires_at' => 'datetime',
-        'is_active' => 'boolean',
     ];
 
     public function plan()
     {
-        return $this->belongsTo(Subscription::class, 'subscription_plan_id');
+        return $this->belongsTo(Subscription::class, 'subscription_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    // Helper to check if still valid
+    public function isValid()
+    {
+        return $this->status === 'active' && $this->expires_at->isFuture();
     }
 }

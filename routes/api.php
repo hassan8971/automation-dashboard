@@ -11,6 +11,9 @@ use App\Http\Controllers\Api\v1\CheckoutController;
 use App\Http\Controllers\Api\v1\MenuController;
 use App\Http\Controllers\Api\v1\BlogController;
 use App\Http\Controllers\Api\v1\CartController;
+use App\Http\Controllers\Api\v1\SubscriptionController;
+use App\Http\Controllers\Api\v1\AddonController;
+use App\Http\Controllers\Api\v1\WalletController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,6 +38,10 @@ Route::get('blog/posts/{slug}', [BlogController::class, 'show']);
 Route::get('blog/categories', [BlogController::class, 'categories']);
 
 Route::post('/cart/check-discount', [CartController::class, 'checkDiscount']);
+
+Route::get('/subscriptions', [SubscriptionController::class, 'index']);
+
+Route::get('/addons', [AddonController::class, 'index']); // List
 
 
 // این مسیر پیش‌فرض لاراول برای احراز هویت با Sanctum است
@@ -64,6 +71,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('products/{product}/reviews', [ProductReviewController::class, 'store']);
 
     Route::post('checkout', [CheckoutController::class, 'store']);
+
+    Route::get('/subscriptions/current', [SubscriptionController::class, 'current']);
+    
+    // Buy a sub
+    Route::post('/subscriptions/purchase', [SubscriptionController::class, 'purchase']);
+
+    Route::get('/addons/my', [AddonController::class, 'myAddons']); // Check ownership
+    Route::post('/addons/purchase', [AddonController::class, 'purchase']); // Buy
+
+    Route::get('/wallet', [WalletController::class, 'index']); // Check Balance
+    Route::get('/wallet/history', [WalletController::class, 'history']); // Transactions
+    Route::post('/wallet/deposit', [WalletController::class, 'deposit']); // Add Money (Mock)
 
 });
 
