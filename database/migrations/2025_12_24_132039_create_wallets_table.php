@@ -15,6 +15,7 @@ return new class extends Migration
         Schema::create('wallets', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('service_name')->default('appstore');
             $table->unsignedBigInteger('balance')->default(0); // موجودی به تومان
             $table->boolean('is_active')->default(true); // مسدود کردن کیف پول
             $table->timestamps();
@@ -24,6 +25,7 @@ return new class extends Migration
         Schema::create('wallet_transactions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('wallet_id')->constrained()->cascadeOnDelete();
+            $table->string('service_name')->default('appstore');
             
             // نوع تراکنش: deposit (واریز), withdraw (برداشت/خرید), manual_add (شارژ دستی ادمین), manual_sub (کسر دستی ادمین)
             $table->string('type'); 

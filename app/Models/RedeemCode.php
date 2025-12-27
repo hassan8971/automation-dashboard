@@ -27,11 +27,12 @@ class RedeemCode extends Model
 
     // لیست سرویس‌های پشتیبانی شده
     const SERVICES = [
-        'appstore' => 'AppStore',
-        'macstore' => 'MacStore',
-        'sibaneh_code' => 'Sibaneh Code',
-        'sibaneh_business' => 'Sibaneh Business',
-        'sibaneh_prime' => 'Sibaneh Prime',
+        'all' => 'همه سرویس‌ها',
+        'appstore' => 'اپ استور',
+        'macstore' => 'مک استور',
+        'sibaneh_code' => 'سیبانه کد',
+        'sibaneh_business' => 'سیبانه بیزینس',
+        'sibaneh_prime' => 'سیبانه پرایم',
     ];
 
     // اسکوپ برای کدهای قابل استفاده

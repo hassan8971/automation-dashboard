@@ -15,7 +15,8 @@
 }">
 
     {{-- انتخاب حالت فقط در زمان ایجاد فعال است --}}
-    <div x-show="!isEditMode" class="mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
+    @if(!isset($redeemCode)) {{-- استفاده از Blade به جای x-show --}}
+    <div class="mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">روش ایجاد کد:</label>
         <div class="flex space-x-4 space-x-reverse">
             <label class="flex items-center cursor-pointer">
@@ -28,11 +29,12 @@
             </label>
         </div>
     </div>
-    
-    {{-- اگر در حالت ادیت باشیم، اینپوت مخفی برای تایپ ارسال می‌کنیم --}}
-    <div x-show="isEditMode">
+    @else
+        {{-- اگر در حالت ادیت باشیم، اینپوت مخفی را اینجا می‌گذاریم --}}
+        {{-- چون داخل شرط @else است، در صفحه ایجاد اصلا وجود نخواهد داشت --}}
         <input type="hidden" name="creation_type" value="single">
-    </div>
+    @endif
+
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         
@@ -104,8 +106,19 @@
         {{-- 5. تاریخ انقضا --}}
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 text-right mb-2">تاریخ انقضا (اختیاری)</label>
-            <input type="datetime-local" name="expires_at" value="{{ old('expires_at', isset($redeemCode) && $redeemCode->expires_at ? $redeemCode->expires_at->format('Y-m-d\TH:i') : '') }}" 
-                   class="block w-full px-4 py-2.5 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white ltr">
+            
+            <div class="relative">
+                {{-- اینپوت نمایشی (شمسی) --}}
+                {{-- مقدار اولیه را اگر وجود داشت (در حالت ادیت)، به صورت timestamp به جاوااسکریپت پاس می‌دهیم --}}
+                <input type="text" id="pdp_input" 
+                    class="block w-full px-4 py-2.5 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white text-center cursor-pointer"
+                    placeholder="انتخاب تاریخ و ساعت..." readonly>
+                    
+                {{-- اینپوت اصلی (میلادی) که به سرور ارسال می‌شود --}}
+                {{-- name="expires_at" روی این است تا لاراول این را بگیرد --}}
+                <input type="hidden" name="expires_at" id="pdp_real_input" 
+                    value="{{ old('expires_at', isset($redeemCode) && $redeemCode->expires_at ? $redeemCode->expires_at->format('Y-m-d H:i:s') : '') }}">
+            </div>
         </div>
     </div>
 
@@ -134,3 +147,50 @@
         </button>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        let initialValue = null;
+        
+        @if(isset($redeemCode) && $redeemCode->expires_at)
+            initialValue = {{ $redeemCode->expires_at->timestamp * 1000 }};
+        @elseif(old('expires_at'))
+             // تلاش برای پارس کردن تاریخ قدیمی
+             initialValue = new Date("{{ old('expires_at') }}").getTime();
+        @endif
+
+        $('#pdp_input').persianDatepicker({
+            initialValue: initialValue ? true : false,
+            initialValueType: 'persian',
+            format: 'YYYY/MM/DD  HH:mm',
+            autoClose: true,
+            timePicker: {
+                enabled: true,
+                meridiem: { enabled: true }
+            },
+            // نکته مهم: این تنظیمات برای اینپوت مخفی است
+            altField: '#pdp_real_input',
+            altFormat: 'YYYY-MM-DD HH:mm:ss', // فرمت استاندارد SQL
+            observer: true,
+            
+            // 🔥 این قسمت تضمین می‌کند که تاریخ همیشه میلادی و انگلیسی ذخیره شود
+            onSelect: function(unix){
+                // تبدیل یونیکس به آبجکت تاریخ پرشین
+                const date = new persianDate(unix);
+                
+                // تبدیل به میلادی و فرمت‌دهی با اعداد انگلیسی
+                const gregorianDate = date.toLocale('en').toCalendar('gregorian').format('YYYY-MM-DD HH:mm:ss');
+                
+                // مقداردهی دستی به اینپوت مخفی
+                $('#pdp_real_input').val(gregorianDate);
+            }
+        });
+
+        // ست کردن مقدار اولیه در حالت ادیت
+        if (initialValue) {
+            $('#pdp_input').pDatepicker('setDate', initialValue);
+        }
+    });
+</script>
+@endpush

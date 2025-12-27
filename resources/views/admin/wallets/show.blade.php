@@ -8,7 +8,10 @@
     {{-- Header --}}
     <div class="flex justify-between items-center mb-6">
         <div>
-            <h1 class="text-2xl font-bold dark:text-white">کیف پول: {{ $wallet->user->name }}</h1>
+            <h1 class="text-2xl font-bold dark:text-white">
+                کیف پول: {{ $wallet->user->name }} 
+                <span class="text-sm bg-gray-200 text-gray-700 px-2 py-1 rounded mx-2">{{ $wallet->service_name }}</span>
+            </h1>
             <p class="text-gray-500 mt-1">موجودی فعلی: <span class="text-emerald-600 font-bold text-xl">{{ number_format($wallet->balance) }} تومان</span></p>
         </div>
         

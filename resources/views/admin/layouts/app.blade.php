@@ -149,5 +149,6 @@
     <div id="global-toast-container" class="fixed bottom-6 left-6 z-50 flex flex-col gap-4"></div>
 
     @include('admin.layouts.scripts')
+    @stack('scripts')
 </body>
 </html>

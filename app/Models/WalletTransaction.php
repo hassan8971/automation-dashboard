@@ -10,7 +10,7 @@ class WalletTransaction extends Model
     use HasFactory;
 
     protected $fillable = [
-        'wallet_id', 'type', 'amount', 'status', 'reference_id', 'description'
+        'wallet_id', 'type', 'amount', 'status', 'reference_id', 'description', 'service_name'
     ];
 
     // ثابت‌ها برای استفاده در کد (جلوگیری از تایپ اشتباه)

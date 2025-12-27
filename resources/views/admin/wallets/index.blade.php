@@ -39,6 +39,7 @@
                     <th class="px-5 py-3 border-b-2 text-right text-xs font-semibold text-gray-600 dark:text-gray-300">کاربر</th>
                     <th class="px-5 py-3 border-b-2 text-right text-xs font-semibold text-gray-600 dark:text-gray-300">موجودی (تومان)</th>
                     <th class="px-5 py-3 border-b-2 text-right text-xs font-semibold text-gray-600 dark:text-gray-300">آخرین بروزرسانی</th>
+                    <th class="px-5 py-3 border-b-2 text-right text-xs font-semibold text-gray-600 dark:text-gray-300">سرویس</th>
                     <th class="px-5 py-3 border-b-2 text-left">عملیات</th>
                 </tr>
             </thead>
@@ -56,6 +57,11 @@
                     </td>
                     <td class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 text-sm">
                         {{ $wallet->updated_at->diffForHumans() }}
+                    </td>
+                    <td class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <span class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-xs font-bold">
+                            {{ strtoupper($wallet->service_name) }}
+                        </span>
                     </td>
                     <td class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 text-left">
                         <a href="{{ route('admin.wallets.show', $wallet) }}" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm">مشاهده تراکنش‌ها و مدیریت</a>

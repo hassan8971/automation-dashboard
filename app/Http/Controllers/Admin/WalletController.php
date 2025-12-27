@@ -28,6 +28,10 @@ class WalletController extends Controller
             });
         }
 
+        if ($request->filled('service')) {
+            $query->where('service_name', $request->service);
+        }
+
         // استفاده از withQueryString برای اینکه در صفحه ۲ و ۳ جستجو نپرد
         $wallets = $query->latest('updated_at')
                          ->paginate(20)

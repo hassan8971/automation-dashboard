@@ -5,79 +5,91 @@ namespace App\Http\Controllers\Api\v1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\WalletTransaction;
-use App\Http\Resources\api\v1\WalletTransactionResource;
+use App\Models\Wallet; // اضافه شد
+use App\Http\Resources\api\v1\WalletTransactionResource; // مطمئن شوید مسیر درست است
 use Illuminate\Support\Facades\DB;
 
 class WalletController extends Controller
 {
     /**
-     * 1. Get Wallet Balance
+     * 1. Get Wallet Balance (Specific Service)
      */
     public function index(Request $request)
     {
         $user = $request->user();
         
-        // Ensure wallet exists
-        if (!$user->wallet) {
-            $user->wallet()->create(['balance' => 0]);
-            $user->load('wallet');
-        }
+        // دریافت نام سرویس از ورودی (پیش‌فرض appstore)
+        $serviceName = $request->input('service_type', 'appstore');
+        
+        // پیدا کردن یا ساختن کیف پول مخصوص آن سرویس
+        $wallet = Wallet::firstOrCreate(
+            ['user_id' => $user->id, 'service_name' => $serviceName],
+            ['balance' => 0, 'is_active' => true]
+        );
 
         return response()->json([
-            'balance' => (int) $user->wallet->balance,
-            'formatted_balance' => number_format($user->wallet->balance) . ' تومان',
+            'service' => $serviceName,
+            'balance' => (int) $wallet->balance,
+            'formatted_balance' => number_format($wallet->balance) . ' تومان',
             'currency' => 'تومان',
-            'is_active' => (boolean) $user->wallet->is_active,
+            'is_active' => (boolean) $wallet->is_active,
         ]);
     }
 
     /**
-     * 2. Get Transaction History
+     * 2. Get Transaction History (Filtered by Service)
      */
     public function history(Request $request)
     {
         $user = $request->user();
+        $serviceName = $request->input('service_type', 'appstore');
+
+        $wallet = Wallet::where('user_id', $user->id)
+                        ->where('service_name', $serviceName)
+                        ->first();
         
-        if (!$user->wallet) {
-            return WalletTransactionResource::collection([]);
+        if (!$wallet) {
+            return response()->json(['data' => []]);
         }
 
-        $transactions = $user->wallet->transactions()
+        $transactions = $wallet->transactions()
             ->latest()
             ->paginate(20);
 
+        // اگر ریسورس شما نیاز به تغییر دارد، باید آن را هم آپدیت کنید که سرویس را نشان دهد
         return WalletTransactionResource::collection($transactions);
     }
 
     /**
      * 3. Deposit Money (Mock Payment)
-     * In a real app, this would redirect to a bank gateway.
-     * Here, it instantly charges the wallet.
      */
     public function deposit(Request $request)
     {
         $request->validate([
-            'amount' => 'required|numeric|min:1000', // Minimum 1000 Tomans
+            'amount' => 'required|numeric|min:1000',
+            'service_type' => 'nullable|string', // ورودی سرویس
         ]);
 
         $user = $request->user();
         $amount = $request->amount;
+        $serviceName = $request->input('service_type', 'appstore');
 
-        if (!$user->wallet) {
-            $user->wallet()->create(['balance' => 0]);
-        }
-
-        // Simulate a successful bank transaction
         try {
             DB::beginTransaction();
 
-            // Use the helper method we created in the Wallet Model
-            $user->wallet->deposit(
+            // پیدا کردن یا ساختن کیف پول سرویس مورد نظر
+            $wallet = Wallet::firstOrCreate(
+                ['user_id' => $user->id, 'service_name' => $serviceName],
+                ['balance' => 0]
+            );
+
+            // متد deposit که آپدیت کردیم، خودش service_name را در تراکنش ثبت می‌کند
+            $wallet->deposit(
                 $amount,
                 WalletTransaction::TYPE_DEPOSIT,
-                'شارژ آنلاین کیف پول (تست)',
-                'confirmed', // Status
-                'REF-' . strtoupper(uniqid()) // Fake Bank Reference ID
+                "شارژ آنلاین ($serviceName)",
+                'confirmed',
+                'REF-' . strtoupper(uniqid())
             );
 
             DB::commit();
@@ -85,7 +97,8 @@ class WalletController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'کیف پول با موفقیت شارژ شد.',
-                'new_balance' => number_format($user->wallet->balance) . ' تومان'
+                'service' => $serviceName,
+                'new_balance' => number_format($wallet->balance) . ' تومان'
             ]);
 
         } catch (\Exception $e) {

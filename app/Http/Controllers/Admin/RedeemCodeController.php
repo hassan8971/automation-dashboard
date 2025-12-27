@@ -30,7 +30,7 @@ class RedeemCodeController extends Controller
         $validated = $request->validate([
             'creation_type' => 'required|in:single,bulk', // تکی یا انبوه
             'amount' => 'required|numeric|min:0',
-            'service_type' => 'required|string',
+            'service_type' => 'required|string|in:' . implode(',', array_keys(RedeemCode::SERVICES)), // ✅ Validate against Model keys
             'usage_limit' => 'required|integer|min:1',
             'expires_at' => 'nullable|date',
             'is_active' => 'nullable|boolean',
@@ -94,7 +94,7 @@ class RedeemCodeController extends Controller
         $validated = $request->validate([
             'code' => 'required|string|unique:redeem_codes,code,' . $redeemCode->id,
             'amount' => 'required|numeric|min:0',
-            'service_type' => 'required|string',
+            'service_type' => 'required|string|in:' . implode(',', array_keys(RedeemCode::SERVICES)), // ✅ Validate against Model keys
             'usage_limit' => 'required|integer|min:1',
             'expires_at' => 'nullable|date',
             'is_active' => 'nullable|boolean',

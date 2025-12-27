@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\v1\CartController;
 use App\Http\Controllers\Api\v1\SubscriptionController;
 use App\Http\Controllers\Api\v1\AddonController;
 use App\Http\Controllers\Api\v1\WalletController;
+use App\Http\Controllers\Api\v1\RedeemCodeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -83,6 +84,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/wallet', [WalletController::class, 'index']); // Check Balance
     Route::get('/wallet/history', [WalletController::class, 'history']); // Transactions
     Route::post('/wallet/deposit', [WalletController::class, 'deposit']); // Add Money (Mock)
+
+    Route::post('/wallet/redeem', [RedeemCodeController::class, 'redeem']);
 
 });
 

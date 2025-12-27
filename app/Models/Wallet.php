@@ -33,7 +33,8 @@ class Wallet extends Model
             'amount' => $amount,
             'status' => $status,
             'description' => $description,
-            'reference_id' => $refId
+            'reference_id' => $refId,
+            'service_name' => $this->service_name
         ]);
     }
 
@@ -53,7 +54,8 @@ class Wallet extends Model
             'amount' => $amount,
             'status' => $status,
             'description' => $description,
-            'reference_id' => $refId
+            'reference_id' => $refId,
+            'service_name' => $this->service_name
         ]);
     }
 }
