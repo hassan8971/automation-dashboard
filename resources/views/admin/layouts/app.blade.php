@@ -65,7 +65,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                 </x-slot:icon>
                 <x-sidebar.sub-link title="همه ریدیم کد ها" href="{{ route('admin.redeem-codes.index') }}" :active="request()->routeIs('admin.redeem-codes.index')"/>
-                <x-sidebar.sub-link title="افزودن ریدیم کد" href="{{ route('admin.addons.create') }}" :active="request()->routeIs('admin.redeem-codes.create')"/>
+                <x-sidebar.sub-link title="افزودن ریدیم کد" href="{{ route('admin.redeem-codes.create') }}" :active="request()->routeIs('admin.redeem-codes.create')"/>
             </x-sidebar.group>
 
             <x-sidebar.link title="کیف پول ها" href="{{ route('admin.wallets.index') }}" :active="request()->routeIs('admin.wallets.*')">

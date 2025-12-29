@@ -164,24 +164,56 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
              {{-- Prices --}}
-             <div x-data="{ 
-                val: '{{ old('price_sibaneh', $product->price_sibaneh ?? '') }}',
-                format(v) { return v ? v.toString().replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''; }
-             }">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">قیمت در سیبانه (تومان)</label>
-                <input type="text" class="w-full px-4 py-2 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white ltr font-mono"
-                       :value="format(val)" @input="val = $event.target.value.replace(/[^0-9]/g, ''); $event.target.value = format(val)">
-                <input type="hidden" name="price_sibaneh" :value="val">
-            </div>
 
             <div x-data="{ 
                 val: '{{ old('price_appstore', $product->price_appstore ?? '') }}',
                 format(v) { return v ? v.toString().replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''; }
              }">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">قیمت دلاری (AppStore)</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">قیمت دلاری</label>
                 <input type="text" name="price_appstore_display" class="w-full px-4 py-2 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white ltr font-mono"
-                       :value="format(val)" @input="val = $event.target.value.replace(/[^0-9]/g, ''); $event.target.value = format(val)">
+                       :value="format(val)" @input="val = $event.target.value.replace(/[^0-9]/g, ''); $event.target.value = format(val)" placeholder="(نمایشی)">
                 <input type="hidden" name="price_appstore" :value="val">
+            </div>
+
+            <div x-data="{ 
+                val: '{{ old('price', $product->price ?? '') }}',
+                format(v) { return v ? v.toString().replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''; }
+             }">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">قیمت بدون اشتراک</label>
+                <input type="text" name="price_display" class="w-full px-4 py-2 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white ltr font-mono"
+                       :value="format(val)" @input="val = $event.target.value.replace(/[^0-9]/g, ''); $event.target.value = format(val)" placeholder="تومان">
+                <input type="hidden" name="price" :value="val">
+            </div>
+
+             <div x-data="{ 
+                val: '{{ old('price_sibaneh', $product->price_sibaneh ?? '') }}',
+                format(v) { return v ? v.toString().replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''; }
+             }">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">قیمت در سیبانه</label>
+                <input type="text" class="w-full px-4 py-2 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white ltr font-mono"
+                       :value="format(val)" @input="val = $event.target.value.replace(/[^0-9]/g, ''); $event.target.value = format(val)" placeholder="تومان">
+                <input type="hidden" name="price_sibaneh" :value="val">
+            </div>
+
+
+            <div x-data="{ 
+                val: '{{ old('price_sibaneh_plus', $product->price_sibaneh_plus ?? '') }}',
+                format(v) { return v ? v.toString().replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''; }
+             }">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">قیمت سیبانه پلاس</label>
+                <input type="text" name="price_sibaneh_plus_display" class="w-full px-4 py-2 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white ltr font-mono"
+                       :value="format(val)" @input="val = $event.target.value.replace(/[^0-9]/g, ''); $event.target.value = format(val)" placeholder="تومان">
+                <input type="hidden" name="price_sibaneh_plus" :value="val">
+            </div>
+
+            <div x-data="{ 
+                val: '{{ old('price_sibaneh_pro', $product->price_sibaneh_pro ?? '') }}',
+                format(v) { return v ? v.toString().replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''; }
+             }">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">قیمت سیبانه پرو</label>
+                <input type="text" name="price_sibaneh_pro_display" class="w-full px-4 py-2 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white ltr font-mono"
+                       :value="format(val)" @input="val = $event.target.value.replace(/[^0-9]/g, ''); $event.target.value = format(val)" placeholder="تومان">
+                <input type="hidden" name="price_sibaneh_pro" :value="val">
             </div>
 
             {{-- Version --}}

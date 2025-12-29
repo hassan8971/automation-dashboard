@@ -201,7 +201,10 @@ public function fetchItunes(Request $request)
             'title' => 'required|string|max:255',
             'name_fa' => 'nullable|string|max:255',
             'category_id' => 'nullable|exists:categories,id',
+            'price' => 'nullable|numeric',
             'price_sibaneh' => 'nullable|numeric',
+            'price_sibaneh_plus' => 'nullable|numeric',
+            'price_sibaneh_pro' => 'nullable|numeric',
             'price_appstore' => 'nullable|numeric',
             'bundle_id' => 'nullable|string',
             'version' => 'nullable|string',
@@ -219,7 +222,10 @@ public function fetchItunes(Request $request)
             $product->slug = Str::slug($request->title . '-' . Str::random(4));
         }
         $product->category_id = $request->category_id;
+        $product->price = $request->price ?? 0;
         $product->price_sibaneh = $request->price_sibaneh ?? 0;
+        $product->price_sibaneh_plus = $request->price_sibaneh_plus ?? 0;
+        $product->price_sibaneh_pro = $request->price_sibaneh_pro ?? 0;
         $product->price_appstore = $request->price_appstore ?? 0;
         $product->bundle_id = $request->bundle_id;
         $product->version = $request->version;

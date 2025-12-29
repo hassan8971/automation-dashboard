@@ -32,7 +32,10 @@ return new class extends Migration
             
             // Prices
             $table->unsignedBigInteger('price_appstore')->default(0); // Price on Appstore (Display)
+            $table->unsignedBigInteger('price')->default(0); // Price without Subscriptions
             $table->unsignedBigInteger('price_sibaneh')->default(0); // Price on Sibaneh (Real)
+            $table->unsignedBigInteger('price_sibaneh_plus')->default(0); // Sibaneh Plus Price
+            $table->unsignedBigInteger('price_sibaneh_pro')->default(0); // Sibaneh Pro Price
             
             // Tech Specs
             $table->string('bundle_id')->nullable();
