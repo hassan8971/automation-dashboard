@@ -36,4 +36,9 @@ class UserSubscription extends Model
     {
         return $this->status === 'active' && $this->expires_at->isFuture();
     }
+    public function subscription()
+    {
+        // Assuming your plans table is 'subscriptions'
+        return $this->belongsTo(Subscription::class);
+    }
 }

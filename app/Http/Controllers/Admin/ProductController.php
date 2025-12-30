@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Subscription;
+use App\Models\Addon;
 use App\Models\ProductScreenshot;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -34,7 +35,8 @@ class ProductController extends Controller
     {
         $categories = Category::all();
         $subscriptions = Subscription::where('is_active', true)->get();
-        return view('admin.products.create', compact('categories', 'subscriptions'));
+        $addons = Addon::where('is_active', true)->get();
+        return view('admin.products.create', compact('categories', 'subscriptions', 'addons'));
     }
 
     public function store(Request $request)
@@ -47,7 +49,9 @@ class ProductController extends Controller
     {
         $categories = Category::all();
         $subscriptions = Subscription::where('is_active', true)->get();
-        return view('admin.products.edit', compact('product', 'categories', 'subscriptions'));
+        $addons = Addon::where('is_active', true)->get();
+        $product->load(['subscriptions', 'addons']);
+        return view('admin.products.edit', compact('product', 'categories', 'subscriptions', 'addons'));
     }
 
     public function update(Request $request, Product $product)
@@ -211,8 +215,20 @@ public function fetchItunes(Request $request)
             'fetched_icon_url' => 'nullable|url',
             'fetched_screenshots' => 'nullable|array',
             'fetched_screenshots.*' => 'url',
+            'subscriptions' => 'nullable|array',
+            'subscriptions.*' => 'exists:subscriptions,id',
+            'addons' => 'nullable|array',
+            'addons.*' => 'exists:addons,id',
             // بقیه ولیدیشن‌ها...
         ]);
+
+        if ($request->filled('subscriptions') && $request->filled('addons')) {
+            // اگر هر دو پر بودند، خطا برگردان
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'subscriptions' => ['شما نمی‌توانید همزمان هم اشتراک و هم افزودنی را برای یک محصول انتخاب کنید.'],
+                'addons' => ['لطفاً فقط یکی از موارد (اشتراک یا افزودنی) را انتخاب کنید.']
+            ]);
+        }
 
         // ذخیره فیلدهای ساده
         $product->title = $request->title;
@@ -242,6 +258,7 @@ public function fetchItunes(Request $request)
         $product->appstore_link = $request->appstore_link;
         $product->age_rating = $request->age_rating;
         $product->app_updated_at = $request->app_updated_at;
+        $product->is_subscription_only = $request->has('is_subscription_only');
 
         // ذخیره فایل‌ها: اولویت با فایل آپلودی است، بعد URL فچ شده
         if ($request->hasFile('icon')) {
@@ -284,6 +301,16 @@ public function fetchItunes(Request $request)
 
         if ($request->has('subscriptions')) {
             $product->subscriptions()->sync($request->subscriptions);
+            // اگر اشتراک انتخاب شد، ادآن‌ها را خالی کن (محکم‌کاری)
+            $product->addons()->detach();
+        } elseif ($request->has('addons')) {
+            $product->addons()->sync($request->addons);
+            // اگر ادآن انتخاب شد، اشتراک‌ها را خالی کن
+            $product->subscriptions()->detach();
+        } else {
+            // اگر هیچکدام انتخاب نشد، همه را پاک کن
+            $product->subscriptions()->detach();
+            $product->addons()->detach();
         }
 
         // Screenshots Upload

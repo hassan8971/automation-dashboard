@@ -26,8 +26,7 @@ Route::prefix('v1')->group(function () {
 
 
 Route::get('/products', [ProductController::class, 'index']);
-Route::get('/products/{slug}', [ProductController::class, 'show']);
-Route::get('/search', [ProductController::class, 'search']);
+Route::get('/products/{id}', [ProductController::class, 'show']);
 
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{slug}', [CategoryController::class, 'show'])->where('slug', '.*');
@@ -86,6 +85,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/wallet/deposit', [WalletController::class, 'deposit']); // Add Money (Mock)
 
     Route::post('/wallet/redeem', [RedeemCodeController::class, 'redeem']);
+
+    Route::post('/products/{id}/install', [ProductController::class, 'install']);
+
+    Route::post('/products/{id}/buy', [ProductController::class, 'buy']);
 
 });
 

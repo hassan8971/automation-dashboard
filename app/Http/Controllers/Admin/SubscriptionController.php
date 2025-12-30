@@ -50,6 +50,7 @@ class SubscriptionController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255|unique:subscriptions,slug,' . ($subscription->id ?? 'NULL') . ',id',
             'price' => 'required|numeric|min:0',
             'duration_in_days' => 'required|integer|min:1',
             'description' => 'nullable|string', // اضافه شد
@@ -59,9 +60,7 @@ class SubscriptionController extends Controller
         ]);
 
         $subscription->name = $validated['name'];
-        if (!$subscription->exists || $subscription->isDirty('name')) {
-             $subscription->slug = Str::slug($validated['name']);
-        }
+        $subscription->slug = $validated['slug'] ?? Str::slug($validated['name']);
         $subscription->price = $validated['price'];
         $subscription->duration_in_days = $validated['duration_in_days'];
         $subscription->description = $validated['description'];

@@ -34,4 +34,9 @@ class Product extends Model
     {
         return $this->belongsToMany(Subscription::class, 'product_subscription');
     }
+
+    public function addons()
+    {
+        return $this->belongsToMany(Addon::class, 'product_addon');
+    }
 }

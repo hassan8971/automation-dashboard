@@ -24,6 +24,15 @@
         </div>
     </div>
 
+    <div class="grid grid-cols-1 gap-6">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 text-right mb-2">اسلاگ</label>
+            <input type="text" name="slug" value="{{ old('slug', $subscription->slug ?? '') }}" 
+                      class="block w-full px-4 py-2.5 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white"
+                      placeholder="اسلاگ (انگلیسی)">
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 text-right mb-2">مدت اعتبار (روز)</label>

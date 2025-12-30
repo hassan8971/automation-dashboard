@@ -27,6 +27,8 @@ return new class extends Migration
             $table->string('name_fa')->nullable(); // Persian Name
             $table->string('name_en')->nullable(); // English Name
             $table->string('slug')->unique();
+
+            $table->boolean('is_subscription_only')->default(false);
             
             $table->foreignId('category_id')->nullable()->constrained()->nullOnDelete();
             
@@ -109,6 +111,18 @@ return new class extends Migration
             // Assuming your subscription table is named 'subscriptions' from previous steps
             $table->foreignId('subscription_id')->constrained('subscriptions')->cascadeOnDelete(); 
         });
+
+        Schema::create('product_addon', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            
+            // اگر نام جدول افزودنی‌های شما addons است
+            $table->foreignId('addon_id')->constrained('addons')->cascadeOnDelete();
+            
+            $table->timestamps();
+            
+            $table->unique(['product_id', 'addon_id']);
+        });
     }
 
     public function down(): void
@@ -116,6 +130,7 @@ return new class extends Migration
         Schema::dropIfExists('product_subscription');
         Schema::dropIfExists('product_screenshots');
         Schema::dropIfExists('products');
+        Schema::dropIfExists('product_addon');
         Schema::dropIfExists('categories');
     }
 };

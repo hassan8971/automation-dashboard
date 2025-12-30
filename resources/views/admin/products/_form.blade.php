@@ -162,6 +162,26 @@
 
         <hr class="dark:border-gray-700">
 
+        <div class="grid grid-cols-1 gap-6">
+
+        {{-- Subscription Only Checkbox --}}
+        <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 rounded-lg">
+            <label class="flex items-center cursor-pointer">
+                <input type="checkbox" name="is_subscription_only" value="1" 
+                    class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    @checked(old('is_subscription_only', $product->is_subscription_only ?? false))>
+                
+                <div class="mr-3">
+                    <span class="block text-sm font-bold text-gray-800 dark:text-white">رایگان (مخصوص مشترکین)</span>
+                    <span class="block text-xs text-gray-500 dark:text-gray-400">
+                        اگر تیک بزنید، قیمت‌ها نادیده گرفته می‌شوند و اپلیکیشن فقط برای مشترکین انتخابی (در پایین) رایگان خواهد بود. خرید تکی غیرفعال می‌شود.
+                    </span>
+                </div>
+            </label>
+        </div>
+
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
              {{-- Prices --}}
 
@@ -223,18 +243,95 @@
             </div>
         </div>
 
-        {{-- Supported Subscriptions --}}
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">اشتراک‌های پشتیبانی شده</label>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                @foreach($subscriptions as $sub)
-                    <label class="flex items-center space-x-2 space-x-reverse bg-gray-50 dark:bg-dark-bg p-3 rounded border dark:border-gray-700">
-                        <input type="checkbox" name="subscriptions[]" value="{{ $sub->id }}" 
-                               @checked(in_array($sub->id, old('subscriptions', isset($product) ? $product->subscriptions->pluck('id')->toArray() : [])))
-                               class="w-4 h-4 text-blue-600 rounded">
-                        <span class="text-sm dark:text-gray-300">{{ $sub->name }}</span>
-                    </label>
-                @endforeach
+        <hr class="dark:border-gray-700">
+
+        <div class="grid grid-cols-1 gap-6">
+            
+            {{-- بخش انتخاب لایسنس (اشتراک یا ادآن) --}}
+            <div x-data="{ 
+                hasSub: {{ (is_array(old('subscriptions')) && count(old('subscriptions')) > 0) || (isset($product) && $product->subscriptions->count() > 0) ? 'true' : 'false' }},
+                hasAddon: {{ (is_array(old('addons')) && count(old('addons')) > 0) || (isset($product) && $product->addons->count() > 0) ? 'true' : 'false' }}
+            }" class="bg-white dark:bg-dark-paper p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+                
+                <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2 border-b dark:border-gray-600 pb-3">تنظیمات دسترسی و دانلود</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">مشخص کنید این اپلیکیشن با کدام سرویس‌ها قابل دانلود است. (فقط یکی از گروه‌های زیر قابل انتخاب است)</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    
+                    {{-- 1. لیست اشتراک‌ها --}}
+                    <div class="p-4 rounded-xl border-2 transition-all duration-200"
+                        :class="hasAddon ? 'border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed' : 'border-blue-500/30 bg-blue-50/10'">
+                        
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="text-blue-600 dark:text-blue-400">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path></svg>
+                            </span>
+                            <label class="font-bold text-gray-700 dark:text-gray-200">مجاز برای اشتراک‌های:</label>
+                        </div>
+
+                        <div class="space-y-3 max-h-48 overflow-y-auto px-1">
+                            @forelse($subscriptions as $sub)
+                                <label class="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-white dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                                    <input type="checkbox" name="subscriptions[]" value="{{ $sub->id }}"
+                                        class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-50"
+                                        :disabled="hasAddon"
+                                        @change="hasSub = Array.from(document.querySelectorAll('input[name=\'subscriptions[]\']:checked')).length > 0"
+                                        @checked((is_array(old('subscriptions')) && in_array($sub->id, old('subscriptions'))) || (isset($product) && $product->subscriptions->contains($sub->id)))>
+                                    
+                                    <div class="mr-3 flex flex-col">
+                                        <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $sub->name }}</span>
+                                        <!-- <span class="text-xs text-gray-500">{{ $sub->slug }}</span> -->
+                                    </div>
+                                </label>
+                            @empty
+                                <p class="text-sm text-red-500 text-center py-4">هیچ اشتراکی یافت نشد.</p>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    {{-- 2. لیست افزودنی‌ها --}}
+                    <div class="p-4 rounded-xl border-2 transition-all duration-200"
+                        :class="hasSub ? 'border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed' : 'border-purple-500/30 bg-purple-50/10'">
+                        
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="text-purple-600 dark:text-purple-400">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                            </span>
+                            <label class="font-bold text-gray-700 dark:text-gray-200">مجاز برای خریداران افزودنی:</label>
+                        </div>
+
+                        <div class="space-y-3 max-h-48 overflow-y-auto px-1">
+                            @forelse($addons as $addon)
+                                <label class="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-white dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                                    <input type="checkbox" name="addons[]" value="{{ $addon->id }}"
+                                        class="w-5 h-5 text-purple-600 rounded border-gray-300 focus:ring-purple-500 disabled:opacity-50"
+                                        :disabled="hasSub"
+                                        @change="hasAddon = Array.from(document.querySelectorAll('input[name=\'addons[]\']:checked')).length > 0"
+                                        @checked((is_array(old('addons')) && in_array($addon->id, old('addons'))) || (isset($product) && $product->addons->contains($addon->id)))>
+                                    
+                                    <div class="mr-3 flex flex-col">
+                                        <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $addon->name }}</span>
+                                        <!-- <span class="text-xs text-gray-500">{{ number_format($addon->price) }} تومان</span> -->
+                                    </div>
+                                </label>
+                            @empty
+                                <div class="flex flex-col items-center justify-center py-6 text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
+                                    <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
+                                    <span class="text-sm">هیچ افزودنی تعریف نشده است</span>
+                                    <a href="#" class="text-xs text-blue-500 mt-2 hover:underline">ایجاد افزودنی جدید</a>
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+
+                </div>
+    
+                {{-- نمایش ارورها --}}
+                @if($errors->has('subscriptions') || $errors->has('addons'))
+                    <div class="mt-4 p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+                        {{ $errors->first('subscriptions') ?: $errors->first('addons') }}
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -489,3 +586,7 @@
         </button>
     </div>
 </div>
+
+@push('scripts')
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+@endpush
