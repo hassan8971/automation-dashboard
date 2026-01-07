@@ -25,6 +25,8 @@ use App\Http\Controllers\Admin\GiftController;
 use App\Http\Controllers\Admin\AddonController;
 use App\Http\Controllers\Admin\RedeemCodeController;
 use App\Http\Controllers\Admin\WalletController;
+use App\Http\Controllers\Admin\AppLayoutController;
+use App\Http\Controllers\Admin\AppTabController;
 use App\Http\Controllers\Auth\LoginController as UserLoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\OtpLoginController;
@@ -120,6 +122,27 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('wallets', [WalletController::class, 'index'])->name('wallets.index');
         Route::get('wallets/{wallet}', [WalletController::class, 'show'])->name('wallets.show');
         Route::post('wallets/{wallet}/update-balance', [WalletController::class, 'updateBalance'])->name('wallets.update-balance');
+
+        // لیست تمام صفحات (تب‌ها)
+        Route::get('layouts', [AppLayoutController::class, 'index'])->name('layouts.index');
+        
+        // صفحه ساز (Drag & Drop Builder) برای یک صفحه خاص
+        Route::get('layouts/{page}/builder', [AppLayoutController::class, 'edit'])->name('layouts.builder');
+        
+        // ذخیره یک سکشن (بخش) جدید
+        Route::post('layouts/{page}/sections', [AppLayoutController::class, 'storeSection'])->name('layouts.section.store');
+        
+        // تغییر ترتیب سکشن‌ها (AJAX)
+        Route::post('layouts/reorder', [AppLayoutController::class, 'reorder'])->name('layouts.reorder');
+        
+        // حذف یک سکشن
+        Route::delete('layouts/sections/{section}', [AppLayoutController::class, 'destroySection'])->name('layouts.section.delete');
+
+        Route::get('layouts/create', [AppLayoutController::class, 'create'])->name('layouts.create');
+        Route::post('layouts', [AppLayoutController::class, 'store'])->name('layouts.store');
+        Route::post('layouts/{page}/save-all', [AppLayoutController::class, 'saveAll'])->name('layouts.save_all');
+        Route::post('layouts/upload-image', [AppLayoutController::class, 'uploadImage'])->name('layouts.upload_image');
+        Route::resource('app-tabs', AppTabController::class);
     });
 });
 
