@@ -243,6 +243,7 @@ public function fetchItunes(Request $request)
         $product->price_sibaneh_plus = $request->price_sibaneh_plus ?? 0;
         $product->price_sibaneh_pro = $request->price_sibaneh_pro ?? 0;
         $product->price_appstore = $request->price_appstore ?? 0;
+        $product->price_arcade = $request->price_arcade ?? 0;
         $product->bundle_id = $request->bundle_id;
         $product->version = $request->version;
         $product->size = $request->size;

@@ -236,6 +236,16 @@
                 <input type="hidden" name="price_sibaneh_pro" :value="val">
             </div>
 
+            <div x-data="{ 
+                val: '{{ old('price_arcade', $product->price_arcade ?? '') }}',
+                format(v) { return v ? v.toString().replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''; }
+             }">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">قیمت آرکید</label>
+                <input type="text" name="price_arcade_display" class="w-full px-4 py-2 border rounded-lg dark:bg-dark-paper dark:border-gray-600 dark:text-white ltr font-mono"
+                       :value="format(val)" @input="val = $event.target.value.replace(/[^0-9]/g, ''); $event.target.value = format(val)" placeholder="تومان">
+                <input type="hidden" name="price_arcade" :value="val">
+            </div>
+
             {{-- Version --}}
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">نسخه (Version)</label>

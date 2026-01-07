@@ -38,20 +38,16 @@ class ProductController extends Controller
 
     public function install(Request $request, $id)
     {
-        $product = Product::with('subscriptions')->findOrFail($id);
+        $product = Product::with(['subscriptions', 'addons'])->findOrFail($id);
         $user = $request->user();
 
         // ---------------------------------------------------------
         // PATH A: SUBSCRIPTION ONLY MODE (The "Rayeghan" Checkbox)
         // ---------------------------------------------------------
         if ($product->is_subscription_only) {
-            // 1. Check Ownership (Just in case they bought it before it became sub-only)
             if ($this->checkOwnership($user->id, $id)) {
                 return $this->generateDownloadResponse($product);
             }
-
-            // 2. Subscription Check
-            // We ignore all prices here. If they have the sub, they get in.
             return $this->handleStrictSubscriptionCheck($user, $product);
         }
 
@@ -64,28 +60,54 @@ class ProductController extends Controller
             return $this->generateDownloadResponse($product);
         }
 
-        // 2. Check Subscription (With Tier Pricing)
-        // Even if not "Sub Only", subs might give discounts.
-        if ($product->subscriptions->isNotEmpty() && $user->activeSubscription) {
-             // We attempt to grant access via sub (considering tier prices)
+        // 2. CHECK ADD-ONS (Priority 1)
+        // If product has add-ons, we use Add-on logic strictly.
+        if ($product->addons->isNotEmpty()) {
+            
+            $addonResponse = $this->handleTieredAddonCheck($user, $product);
+
+            if ($addonResponse['allowed']) {
+                return $this->generateDownloadResponse($product);
+            }
+
+            // If allowed but price > 0 (Arcade Price)
+            if (isset($addonResponse['price'])) {
+                return response()->json([
+                    'message' => 'برای دانلود این برنامه باید آن را خریداری کنید (قیمت ویژه مشترکین آرکید).',
+                    'action' => 'payment_required',
+                    'price' => $addonResponse['price']
+                ], 403);
+            }
+        }
+        // 3. CHECK SUBSCRIPTIONS (Priority 2 - Mutually Exclusive per your request)
+        // Only runs if no add-ons are defined for this product
+        elseif ($product->subscriptions->isNotEmpty() && $user->activeSubscription) {
+             
              $subResponse = $this->handleTieredSubscriptionCheck($user, $product);
+             
              if ($subResponse['allowed']) {
                  return $this->generateDownloadResponse($product);
              }
-             // If not allowed via sub (e.g. wrong plan), we fall through to Price Check
+
+             if (isset($subResponse['price'])) {
+                 return response()->json([
+                    'message' => 'برای دانلود این برنامه باید آن را خریداری کنید (قیمت ویژه مشترکین).',
+                    'action' => 'payment_required',
+                    'price' => $subResponse['price']
+                ], 403);
+             }
         }
 
-        // 3. Public Price Check
-        // If Price is 0 -> It's "Public Free". User must "Buy" it for $0 first.
+        // 4. Public Price Check
         if ($product->price == 0) {
             return response()->json([
                 'message' => 'اپلیکیشن رایگان است و کاربر میتواند آن را دریافت کند.',
-                'action' => 'payment_required', // Frontend triggers /buy for 0
+                'action' => 'payment_required', 
                 'price' => 0,
             ], 403);
         }
 
-        // 4. Paid App
+        // 5. Paid App
         return response()->json([
             'message' => 'برای دانلود این برنامه باید آن را خریداری کنید.',
             'action' => 'payment_required',
@@ -95,7 +117,7 @@ class ProductController extends Controller
 
     public function buy(Request $request, $id)
     {
-        $product = Product::findOrFail($id);
+        $product = Product::with(['subscriptions', 'addons'])->findOrFail($id);
         $user = $request->user();
 
         // 🚫 Block buying if it's "Subscription Only"
@@ -111,32 +133,64 @@ class ProductController extends Controller
             return response()->json(['success' => true, 'message' => 'شما قبلاً این محصول را دارید.']);
         }
 
-        // 2. Calculate Price
+        // 2. Calculate Price & Determine Method
         $finalPrice = $product->price;
+        $purchaseMethod = 'normal'; // Default method
 
-        // Check for Subscription Discounts
-        if ($user->activeSubscription) {
-            $allowedSlugs = $product->subscriptions->pluck('slug')->toArray();
+        // --- ADD-ON LOGIC ---
+        if ($product->addons->isNotEmpty()) {
+            $allowedAddonSlugs = $product->addons->pluck('slug')->toArray();
+            $userAddonSlugs = $user->activeAddons()->with('addon')->get()->pluck('addon.slug')->toArray();
             
-            // Fixed: Now using Slugs here too for consistency
-            if (in_array($user->activeSubscription->slug, $allowedSlugs)) {
-                $planSlug = $user->activeSubscription->slug;
+            $matchingSlugs = array_intersect($allowedAddonSlugs, $userAddonSlugs);
+
+            if (in_array('arcade', $matchingSlugs)) {
+                $finalPrice = $product->price_arcade;
+                $purchaseMethod = 'addon'; // Purchased via Addon pricing
+            }
+        }
+        // --- SUBSCRIPTION LOGIC ---
+        elseif ($product->subscriptions->isNotEmpty() && $user->activeSubscription) {
+            $allowedSlugs = $product->subscriptions->pluck('slug')->toArray();
+            $activePlan = $user->activeSubscription->plan; 
+
+            if ($activePlan && in_array($activePlan->slug, $allowedSlugs)) {
+                $planSlug = $activePlan->slug;
+                
                 $priceCol = match($planSlug) {
                     'sibaneh_plus' => 'price_sibaneh_plus',
-                    'sibaneh_pro' => 'price_sibaneh_pro',
-                    default => 'price_sibaneh'
+                    'sibaneh_pro'  => 'price_sibaneh_pro',
+                    default        => 'price_sibaneh'
                 };
+                
                 $finalPrice = $product->{$priceCol};
+                $purchaseMethod = 'subscription'; // Purchased via Subscription pricing
             }
         }
 
-        // 3. Process Free "Purchase"
+        // 3. RESTRICTION: One Normal Price App Limit
+        if ($purchaseMethod === 'normal') {
+            $existingNormalCount = DB::table('user_apps')
+                ->where('user_id', $user->id)
+                ->where('purchase_method', 'normal')
+                ->count();
+
+            if ($existingNormalCount >= 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'شما قبلاً یک برنامه با تعرفه عادی خریده‌اید. برای خرید برنامه‌های بیشتر لطفاً اشتراک تهیه کنید.',
+                    'action' => 'upgrade_required'
+                ], 403);
+            }
+        }
+
+        // 4. Process Free "Purchase"
         if ($finalPrice == 0) {
-            $this->recordOwnership($user->id, $id, 0);
+            $this->recordOwnership($user->id, $id, 0, $purchaseMethod);
             return response()->json(['success' => true, 'message' => 'محصول به رایگان به حساب شما اضافه شد.']);
         }
 
-        // 4. Wallet Check
+        // 5. Wallet Check
         if ($user->wallet->balance < $finalPrice) {
             return response()->json([
                 'message' => 'موجودی کیف پول کافی نیست.',
@@ -145,7 +199,7 @@ class ProductController extends Controller
             ], 402);
         }
 
-        // 5. Transaction
+        // 6. Transaction
         try {
             DB::beginTransaction();
 
@@ -155,7 +209,8 @@ class ProductController extends Controller
                 "خرید اپلیکیشن: {$product->title}"
             );
 
-            $this->recordOwnership($user->id, $id, $finalPrice);
+            // Pass purchase_method to the recorder
+            $this->recordOwnership($user->id, $id, $finalPrice, $purchaseMethod);
 
             DB::commit();
 
@@ -169,6 +224,43 @@ class ProductController extends Controller
             DB::rollBack();
             return response()->json(['message' => 'خطا در تراکنش: ' . $e->getMessage()], 500);
         }
+    }
+
+    // --- NEW HELPER FOR ADD-ONS ---
+    private function handleTieredAddonCheck($user, $product) {
+        $allowedAddonSlugs = $product->addons->pluck('slug')->toArray();
+        
+        // Eager load addons to avoid N+1
+        $userActiveAddons = $user->activeAddons()->with('addon')->get();
+
+        // Check if user has ANY of the allowed addons
+        $matchingUserAddon = $userActiveAddons->first(function($ua) use ($allowedAddonSlugs) {
+            return in_array($ua->addon->slug, $allowedAddonSlugs);
+        });
+
+        // If user doesn't own any allowed addon
+        if (!$matchingUserAddon) {
+            return ['allowed' => false];
+        }
+
+        // Check specific price logic (Arcade)
+        if ($matchingUserAddon->addon->slug === 'arcade') {
+            $price = $product->price_arcade;
+
+            // If price > 0, they must buy at discounted rate
+            if ($price > 0) {
+                return [
+                    'allowed' => false,
+                    'price' => $price
+                ];
+            }
+            
+            // If price is 0, they can download
+            return ['allowed' => true];
+        }
+
+        // Default behavior for other addons (if any): Assume free access if owned
+        return ['allowed' => true];
     }
 
     private function checkOwnership($userId, $productId) {
@@ -203,25 +295,31 @@ class ProductController extends Controller
     }
 
     private function handleTieredSubscriptionCheck($user, $product) {
-        // Your previous logic checking slugs and tier prices...
-        // Return ['allowed' => true] or ['allowed' => false]
-        // I kept this brief to save space, but copy your logic from the previous step here.
-        
         $userSub = $user->activeSubscription()->with('subscription')->first();
         $allowedSlugs = $product->subscriptions->pluck('slug')->toArray();
         
+        // If user has no sub or sub object is missing
         if (!$userSub || !$userSub->subscription) return ['allowed' => false];
         
+        // If sub is not in the allowed list for this product
         if (!in_array($userSub->subscription->slug, $allowedSlugs)) return ['allowed' => false];
         
-        // Check price
+        // Determine the price column based on the plan
         $priceCol = match($userSub->subscription->slug) {
             'sibaneh_plus' => 'price_sibaneh_plus',
             'sibaneh_pro'  => 'price_sibaneh_pro',
             default        => 'price_sibaneh',
         };
         
-        if ($product->{$priceCol} > 0) return ['allowed' => false]; // Needs payment
+        $price = $product->{$priceCol};
+
+        // If price is greater than 0, return false BUT include the price
+        if ($price > 0) {
+            return [
+                'allowed' => false, 
+                'price' => $price // <--- Return the discounted price
+            ]; 
+        }
         
         return ['allowed' => true];
     }

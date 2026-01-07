@@ -129,6 +129,16 @@ class User extends Authenticatable
             ->where('expires_at', '>', now());
     }
 
+    public function activeAddons(): HasMany
+    {
+        return $this->hasMany(UserAddon::class)
+            ->where('status', 'active')
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                      ->orWhere('expires_at', '>', now());
+            });
+    }
+
     /**
      * --- DYNAMIC STATUS ACCESSOR ---
      * values: Guest, Visitor, Member, Prospect, Subscriber, Expiring, Expired

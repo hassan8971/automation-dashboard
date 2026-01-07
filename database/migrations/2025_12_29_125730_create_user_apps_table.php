@@ -17,6 +17,7 @@ return new class extends Migration
             
             // Optional: Store how much they paid (useful for refunds/analytics)
             $table->decimal('price_paid', 15, 0)->default(0);
+            $table->string('purchase_method')->default('normal');
             
             $table->timestamps();
             

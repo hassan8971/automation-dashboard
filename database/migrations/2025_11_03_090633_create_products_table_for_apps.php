@@ -38,6 +38,7 @@ return new class extends Migration
             $table->unsignedBigInteger('price_sibaneh')->default(0); // Price on Sibaneh (Real)
             $table->unsignedBigInteger('price_sibaneh_plus')->default(0); // Sibaneh Plus Price
             $table->unsignedBigInteger('price_sibaneh_pro')->default(0); // Sibaneh Pro Price
+            $table->unsignedBigInteger('price_arcade')->default(0); // Price for Arcade Add-on
             
             // Tech Specs
             $table->string('bundle_id')->nullable();
