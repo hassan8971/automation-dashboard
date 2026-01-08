@@ -110,6 +110,7 @@ class AppLayoutController extends Controller
                         'title' => $tabData['title'],
                         'link' => $tabData['link'], 
                         'icon' => $tabData['icon'] ?? null,
+                        'image_path' => $tabData['image_path'] ?? null,
                         'sort_order' => $tabData['sort_order'] ?? 0,
                     ]);
                 }

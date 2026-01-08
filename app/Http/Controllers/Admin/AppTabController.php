@@ -40,7 +40,6 @@ class AppTabController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        // اگر ترتیب وارد نشد، به انتهای لیست اضافه شود
         if (!isset($data['sort_order'])) {
             $data['sort_order'] = AppTab::max('sort_order') + 1;
         }
@@ -49,10 +48,23 @@ class AppTabController extends Controller
             $data['image_path'] = $request->file('image')->store('tab_icons', 'public');
         }
 
-        // هندل کردن چک‌باکس (اگر تیک نخورده باشد در ریکوئست نمیاید)
-        $data['is_active'] = $request->has('is_active');
+        // چک‌باکس در درخواست‌های معمولی عدد 1 نمیفرستد اگر تیک نخورده باشد، اما در JSON بولین است
+        // این لاین هندل می‌کند:
+        $data['is_active'] = $request->has('is_active') || $request->is_active == 'true' || $request->is_active === true;
 
-        AppTab::create($data);
+        $tab = AppTab::create($data);
+
+        // --- بخش جدید: پاسخ JSON برای بیلدر ---
+        if ($request->wantsJson()) {
+            // آدرس کامل عکس را هم اضافه می‌کنیم برای نمایش آنی
+            $tab->image_url = $tab->image_path ? asset('storage/' . $tab->image_path) : null;
+            return response()->json([
+                'success' => true,
+                'tab' => $tab,
+                'message' => 'تب با موفقیت ساخته شد.'
+            ]);
+        }
+        // ---------------------------------------
 
         return redirect()->route('admin.app-tabs.index')
             ->with('success', 'تب جدید با موفقیت ساخته شد.');
